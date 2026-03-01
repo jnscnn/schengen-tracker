@@ -9,6 +9,7 @@ import {
   parseISO,
   eachDayOfInterval,
   getDay,
+  getDate,
   differenceInDays,
   addMonths,
   isSameDay,
@@ -24,13 +25,12 @@ interface TimelineProps {
   referenceDate?: Date;
 }
 
-const DAY_SIZE = 14;
-const DAY_GAP = 2;
-const DAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const CELL_SIZE = 20;
+const CELL_GAP = 1;
+const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-// Returns 0=Mon, 1=Tue, ..., 6=Sun (ISO weekday)
 function isoWeekday(date: Date): number {
-  const d = getDay(date); // 0=Sun, 1=Mon, ...
+  const d = getDay(date);
   return d === 0 ? 6 : d - 1;
 }
 
@@ -43,7 +43,7 @@ function CompactMonth({
   today,
 }: {
   year: number;
-  month: number; // 0-indexed
+  month: number;
   schengenDays: Set<string>;
   windowStart: Date;
   windowEnd: Date;
@@ -55,43 +55,73 @@ function CompactMonth({
   const startOffset = isoWeekday(monthStart);
   const todayStr = format(today, 'yyyy-MM-dd');
 
+  // Build week rows for proper grid alignment
+  const weeks: (Date | null)[][] = [];
+  let currentWeek: (Date | null)[] = Array(startOffset).fill(null);
+
+  for (const day of days) {
+    currentWeek.push(day);
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
+
   return (
     <View style={compactStyles.monthContainer}>
       <Text style={compactStyles.monthTitle}>{format(monthStart, 'MMM yyyy')}</Text>
       {/* Day-of-week headers */}
       <View style={compactStyles.weekRow}>
         {DAY_HEADERS.map((h, i) => (
-          <Text key={i} style={compactStyles.dayHeader}>{h}</Text>
+          <View key={i} style={compactStyles.cellWrapper}>
+            <Text style={compactStyles.dayHeader}>{h}</Text>
+          </View>
         ))}
       </View>
-      {/* Day grid */}
-      <View style={compactStyles.dayGrid}>
-        {/* Empty cells for offset */}
-        {Array.from({ length: startOffset }).map((_, i) => (
-          <View key={`empty-${i}`} style={compactStyles.dayCell} />
-        ))}
-        {days.map((day) => {
-          const key = format(day, 'yyyy-MM-dd');
-          const inSchengen = schengenDays.has(key);
-          const isToday = key === todayStr;
-          const inWindow =
-            (isAfter(day, windowStart) || isSameDay(day, windowStart)) &&
-            (isBefore(day, windowEnd) || isSameDay(day, windowEnd));
+      {/* Week rows */}
+      {weeks.map((week, wi) => (
+        <View key={wi} style={compactStyles.weekRow}>
+          {week.map((day, di) => {
+            if (!day) {
+              return <View key={`e-${wi}-${di}`} style={compactStyles.cellWrapper} />;
+            }
+            const key = format(day, 'yyyy-MM-dd');
+            const inSchengen = schengenDays.has(key);
+            const isToday = key === todayStr;
+            const inWindow =
+              (isAfter(day, windowStart) || isSameDay(day, windowStart)) &&
+              (isBefore(day, windowEnd) || isSameDay(day, windowEnd));
 
-          return (
-            <View
-              key={key}
-              style={[
-                compactStyles.dayCell,
-                inWindow && inSchengen && { backgroundColor: COLORS.schengenDay },
-                inWindow && !inSchengen && { backgroundColor: COLORS.surfaceSecondary },
-                !inWindow && { backgroundColor: COLORS.borderLight, opacity: 0.4 },
-                isToday && compactStyles.todayCell,
-              ]}
-            />
-          );
-        })}
-      </View>
+            return (
+              <View key={key} style={compactStyles.cellWrapper}>
+                <View
+                  style={[
+                    compactStyles.dayCell,
+                    inWindow && inSchengen && { backgroundColor: COLORS.schengenDay },
+                    inWindow && !inSchengen && { backgroundColor: COLORS.surfaceSecondary },
+                    !inWindow && { backgroundColor: COLORS.borderLight, opacity: 0.35 },
+                    isToday && compactStyles.todayCell,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      compactStyles.dayNumber,
+                      inSchengen && inWindow && { color: COLORS.textInverse },
+                      isToday && !inSchengen && { color: COLORS.accent, fontWeight: '700' },
+                    ]}
+                  >
+                    {getDate(day)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }
@@ -100,7 +130,6 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
   const today = startOfDay(referenceDate || new Date());
   const windowStart = subDays(today, SCHENGEN.WINDOW_DAYS - 1);
 
-  // Build a set of all Schengen days for fast lookup
   const schengenDays = useMemo(() => {
     const days = new Set<string>();
     for (const trip of trips) {
@@ -114,7 +143,6 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
     return days;
   }, [trips]);
 
-  // Count days in Schengen within window
   const daysInSchengen = useMemo(() => {
     let count = 0;
     for (const trip of trips) {
@@ -129,7 +157,6 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
     return count;
   }, [trips, today, windowStart]);
 
-  // Generate the months to display (covering the 180-day window)
   const months = useMemo(() => {
     const result: { year: number; month: number }[] = [];
     const first = startOfMonth(windowStart);
@@ -181,13 +208,16 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
   );
 }
 
+const MONTH_WIDTH = 7 * CELL_SIZE + 6 * CELL_GAP + 8; // cells + gaps + padding
+
 const compactStyles = StyleSheet.create({
   monthContainer: {
-    width: '48%',
-    marginBottom: SPACING.sm,
+    width: MONTH_WIDTH,
+    marginBottom: SPACING.md,
+    padding: 4,
   },
   monthTitle: {
-    fontSize: FONT_SIZE.xs,
+    fontSize: 11,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
@@ -195,27 +225,33 @@ const compactStyles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    gap: DAY_GAP,
-    marginBottom: 2,
+    justifyContent: 'center',
+  },
+  cellWrapper: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    marginHorizontal: CELL_GAP / 2,
+    marginVertical: CELL_GAP / 2,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   dayHeader: {
-    width: DAY_SIZE,
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '600',
     color: COLORS.textTertiary,
     textAlign: 'center',
   },
-  dayGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: DAY_GAP,
+  dayCell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    borderRadius: 4,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  dayCell: {
-    width: DAY_SIZE,
-    height: DAY_SIZE,
-    borderRadius: 3,
+  dayNumber: {
+    fontSize: 9,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   todayCell: {
     borderWidth: 1.5,
@@ -252,7 +288,7 @@ const styles = StyleSheet.create({
   monthsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
   },
   legend: {
     flexDirection: 'row',
@@ -271,7 +307,7 @@ const styles = StyleSheet.create({
   legendDot: {
     width: 12,
     height: 12,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   legendText: {
     fontSize: FONT_SIZE.xs,

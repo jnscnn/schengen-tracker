@@ -65,8 +65,8 @@ export function DaysCounter({ status }: DaysCounterProps) {
     currentTrip ? '📍 In Schengen' :
     '🏠 Outside Schengen';
 
-  const ringSize = 200;
-  const ringStroke = 14;
+  const ringSize = 160;
+  const ringStroke = 12;
 
   return (
     <View style={styles.container}>
@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    width: 200,
-    height: 200,
+    width: 160,
+    height: 160,
   },
   ringContent: {
     position: 'absolute',
@@ -155,9 +155,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   counter: {
-    fontSize: 52,
+    fontSize: 44,
     fontWeight: '800',
-    lineHeight: 56,
+    lineHeight: 48,
   },
   counterLabel: {
     fontSize: FONT_SIZE.sm,
