@@ -2,39 +2,23 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
-import { format, parseISO, isValid, addDays, startOfDay } from 'date-fns';
+import { Calendar, DateData } from 'react-native-calendars';
+import { format, parseISO, addDays, startOfDay } from 'date-fns';
 import { useTripsContext } from '../src/hooks/TripsContext';
 import { planTrip, findNextEntryDate, getSchengenStatus } from '../src/utils/schengen';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../src/constants/theme';
 
-function parseDateInput(input: string): Date | null {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-    const d = parseISO(input);
-    return isValid(d) ? d : null;
-  }
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(input)) {
-    const [m, d, y] = input.split('/').map(Number);
-    const date = new Date(y, m - 1, d);
-    return isValid(date) ? date : null;
-  }
-  return null;
-}
-
 export default function PlannerScreen() {
   const { trips } = useTripsContext();
-  const [arrivalInput, setArrivalInput] = useState('');
-  const [desiredDaysInput, setDesiredDaysInput] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
-  const arrivalDate = useMemo(() => parseDateInput(arrivalInput), [arrivalInput]);
-  const desiredDays = useMemo(() => {
-    const n = parseInt(desiredDaysInput, 10);
-    return isNaN(n) || n <= 0 ? null : n;
-  }, [desiredDaysInput]);
+  const arrivalDate = useMemo(
+    () => (selectedDate ? parseISO(selectedDate) : null),
+    [selectedDate]
+  );
 
   const planResult = useMemo(() => {
     if (!arrivalDate) return null;
@@ -44,22 +28,48 @@ export default function PlannerScreen() {
   const status = useMemo(() => getSchengenStatus(trips), [trips]);
 
   // Quick scenarios
-  const nextWeekTrip = useMemo(
-    () => findNextEntryDate(trips, 7),
-    [trips]
-  );
-  const nextTwoWeekTrip = useMemo(
-    () => findNextEntryDate(trips, 14),
-    [trips]
-  );
-  const nextMonthTrip = useMemo(
-    () => findNextEntryDate(trips, 30),
-    [trips]
-  );
-  const nextFullTrip = useMemo(
-    () => findNextEntryDate(trips, 90),
-    [trips]
-  );
+  const nextWeekTrip = useMemo(() => findNextEntryDate(trips, 7), [trips]);
+  const nextTwoWeekTrip = useMemo(() => findNextEntryDate(trips, 14), [trips]);
+  const nextMonthTrip = useMemo(() => findNextEntryDate(trips, 30), [trips]);
+  const nextFullTrip = useMemo(() => findNextEntryDate(trips, 90), [trips]);
+
+  // Calendar marked dates: selected + hypothetical stay range
+  const markedDates = useMemo(() => {
+    const marks: Record<string, any> = {};
+
+    if (selectedDate && planResult?.canStay && planResult.warningDate) {
+      // Mark the range from arrival to max stay
+      const start = parseISO(selectedDate);
+      const end = parseISO(planResult.warningDate);
+      let current = start;
+      let i = 0;
+      const totalDays = planResult.maxConsecutiveDays;
+      while (current <= end) {
+        const key = format(current, 'yyyy-MM-dd');
+        marks[key] = {
+          color: COLORS.primary,
+          textColor: COLORS.textInverse,
+          startingDay: i === 0,
+          endingDay: i === totalDays - 1,
+        };
+        current = addDays(current, 1);
+        i++;
+      }
+    } else if (selectedDate) {
+      marks[selectedDate] = {
+        color: planResult?.canStay === false ? COLORS.danger : COLORS.primary,
+        textColor: COLORS.textInverse,
+        startingDay: true,
+        endingDay: true,
+      };
+    }
+
+    return marks;
+  }, [selectedDate, planResult]);
+
+  const handleDayPress = (day: DateData) => {
+    setSelectedDate(day.dateString);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -70,52 +80,48 @@ export default function PlannerScreen() {
         </Text>
 
         <View style={styles.quickCards}>
-          <QuickCard
-            label="1 week"
-            days={7}
-            date={nextWeekTrip}
-            available={status.daysRemaining >= 7}
-          />
-          <QuickCard
-            label="2 weeks"
-            days={14}
-            date={nextTwoWeekTrip}
-            available={status.daysRemaining >= 14}
-          />
-          <QuickCard
-            label="1 month"
-            days={30}
-            date={nextMonthTrip}
-            available={status.daysRemaining >= 30}
-          />
-          <QuickCard
-            label="Full 90 days"
-            days={90}
-            date={nextFullTrip}
-            available={status.daysRemaining >= 90}
-          />
+          <QuickCard label="1 week" days={7} date={nextWeekTrip} available={status.daysRemaining >= 7} />
+          <QuickCard label="2 weeks" days={14} date={nextTwoWeekTrip} available={status.daysRemaining >= 14} />
+          <QuickCard label="1 month" days={30} date={nextMonthTrip} available={status.daysRemaining >= 30} />
+          <QuickCard label="Full 90 days" days={90} date={nextFullTrip} available={status.daysRemaining >= 90} />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📅 Plan a Trip</Text>
         <Text style={styles.sectionSubtitle}>
-          Enter an arrival date to see how long you can stay
+          Tap a date to see how long you can stay
         </Text>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputField}>
-            <Text style={styles.inputLabel}>Arrival Date</Text>
-            <TextInput
-              style={styles.input}
-              value={arrivalInput}
-              onChangeText={setArrivalInput}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={COLORS.textTertiary}
-              keyboardType="numbers-and-punctuation"
-            />
+        {selectedDate && arrivalDate && (
+          <View style={styles.selectedDateBanner}>
+            <Text style={styles.selectedDateText}>
+              ✈️ Arriving {format(arrivalDate, 'MMM d, yyyy')}
+            </Text>
           </View>
-        </View>
+        )}
+
+        <Calendar
+          markingType="period"
+          markedDates={markedDates}
+          onDayPress={handleDayPress}
+          minDate={format(new Date(), 'yyyy-MM-dd')}
+          theme={{
+            backgroundColor: COLORS.surface,
+            calendarBackground: COLORS.surface,
+            textSectionTitleColor: COLORS.textSecondary,
+            todayTextColor: COLORS.accent,
+            dayTextColor: COLORS.text,
+            textDisabledColor: COLORS.textTertiary,
+            arrowColor: COLORS.primary,
+            monthTextColor: COLORS.text,
+            textMonthFontWeight: '700',
+            textDayFontSize: 15,
+            textMonthFontSize: 16,
+            textDayHeaderFontSize: 13,
+          }}
+          style={styles.calendar}
+        />
 
         {planResult && arrivalDate && (
           <View style={styles.resultCard}>
@@ -206,17 +212,11 @@ function QuickCard({
     <View style={[styles.quickCard, available && styles.quickCardAvailable]}>
       <Text style={styles.quickCardLabel}>{label}</Text>
       {available ? (
-        <Text style={[styles.quickCardDate, { color: COLORS.success }]}>
-          Now! ✓
-        </Text>
+        <Text style={[styles.quickCardDate, { color: COLORS.success }]}>Now! ✓</Text>
       ) : date ? (
-        <Text style={[styles.quickCardDate, { color: COLORS.warning }]}>
-          {format(parseISO(date), 'MMM d')}
-        </Text>
+        <Text style={[styles.quickCardDate, { color: COLORS.warning }]}>{format(parseISO(date), 'MMM d')}</Text>
       ) : (
-        <Text style={[styles.quickCardDate, { color: COLORS.textTertiary }]}>
-          365+ days
-        </Text>
+        <Text style={[styles.quickCardDate, { color: COLORS.textTertiary }]}>365+ days</Text>
       )}
     </View>
   );
@@ -276,27 +276,21 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
-  inputRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
+  selectedDateBanner: {
+    backgroundColor: COLORS.primaryLight,
+    padding: SPACING.sm,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  inputField: {
-    flex: 1,
-    gap: SPACING.xs,
-  },
-  inputLabel: {
-    fontSize: FONT_SIZE.sm,
+  selectedDateText: {
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.primaryDark,
   },
-  input: {
-    backgroundColor: COLORS.surface,
+  calendar: {
     borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    fontSize: FONT_SIZE.lg,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    overflow: 'hidden',
   },
   resultCard: {
     backgroundColor: COLORS.surface,

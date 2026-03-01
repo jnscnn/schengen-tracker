@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { SchengenStatus } from '../types';
 
@@ -7,10 +8,52 @@ interface DaysCounterProps {
   status: SchengenStatus;
 }
 
+function ProgressRing({
+  size,
+  strokeWidth,
+  progress,
+  color,
+  bgColor,
+}: {
+  size: number;
+  strokeWidth: number;
+  progress: number; // 0-1
+  color: string;
+  bgColor: string;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - Math.min(Math.max(progress, 0), 1));
+
+  return (
+    <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={bgColor}
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={color}
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeDasharray={`${circumference}`}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function DaysCounter({ status }: DaysCounterProps) {
   const { daysRemaining, daysUsed, maxDays, isOverstay, currentTrip } = status;
 
-  const percentage = daysUsed / maxDays;
+  const remainingFraction = daysRemaining / maxDays; // how much is LEFT (for the ring)
   const statusColor =
     isOverstay ? COLORS.danger :
     daysRemaining <= 7 ? COLORS.danger :
@@ -22,35 +65,42 @@ export function DaysCounter({ status }: DaysCounterProps) {
     currentTrip ? '📍 In Schengen' :
     '🏠 Outside Schengen';
 
+  const ringSize = 200;
+  const ringStroke = 14;
+
   return (
     <View style={styles.container}>
       <Text style={styles.statusLabel}>{statusLabel}</Text>
-      <View style={styles.counterContainer}>
-        <Text style={[styles.counter, { color: statusColor }]}>
-          {daysRemaining}
-        </Text>
-        <Text style={styles.counterLabel}>days remaining</Text>
+
+      {/* Ring + counter */}
+      <View style={styles.ringContainer}>
+        <ProgressRing
+          size={ringSize}
+          strokeWidth={ringStroke}
+          progress={remainingFraction}
+          color={statusColor}
+          bgColor={COLORS.surfaceSecondary}
+        />
+        <View style={styles.ringContent}>
+          <Text style={[styles.counter, { color: statusColor }]}>
+            {daysRemaining}
+          </Text>
+          <Text style={styles.counterLabel}>of {maxDays} days left</Text>
+        </View>
       </View>
 
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarBackground}>
-          <View
-            style={[
-              styles.progressBarFill,
-              {
-                width: `${Math.min(percentage * 100, 100)}%`,
-                backgroundColor: statusColor,
-              },
-            ]}
-          />
+      {/* Used / remaining breakdown */}
+      <View style={styles.breakdownRow}>
+        <View style={styles.breakdownItem}>
+          <View style={[styles.breakdownDot, { backgroundColor: statusColor }]} />
+          <Text style={styles.breakdownValue}>{daysUsed}</Text>
+          <Text style={styles.breakdownLabel}>used</Text>
         </View>
-        <View style={styles.progressLabels}>
-          <Text style={styles.progressText}>
-            {daysUsed} used
-          </Text>
-          <Text style={styles.progressText}>
-            {maxDays} max
-          </Text>
+        <View style={styles.breakdownDivider} />
+        <View style={styles.breakdownItem}>
+          <View style={[styles.breakdownDot, { backgroundColor: COLORS.surfaceSecondary }]} />
+          <Text style={styles.breakdownValue}>{daysRemaining}</Text>
+          <Text style={styles.breakdownLabel}>remaining</Text>
         </View>
       </View>
 
@@ -90,43 +140,60 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
-  counterContainer: {
+  ringContainer: {
     alignItems: 'center',
-    marginVertical: SPACING.md,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    width: 200,
+    height: 200,
+  },
+  ringContent: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   counter: {
-    fontSize: FONT_SIZE.hero,
+    fontSize: 52,
     fontWeight: '800',
-    lineHeight: FONT_SIZE.hero * 1.1,
+    lineHeight: 56,
   },
   counterLabel: {
-    fontSize: FONT_SIZE.lg,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  progressBarContainer: {
-    marginTop: SPACING.md,
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: RADIUS.full,
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.xs,
-  },
-  progressText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    gap: SPACING.lg,
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  breakdownDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  breakdownValue: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  breakdownLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+  },
+  breakdownDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: COLORS.border,
   },
   alertBanner: {
     marginTop: SPACING.md,
