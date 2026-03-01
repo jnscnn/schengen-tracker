@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { ResetEvent } from '../types';
 
 interface ResetScheduleProps {
@@ -57,6 +58,8 @@ function groupIntoSpans(events: ResetEvent[]): ResetSpan[] {
 }
 
 export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const spans = useMemo(() => groupIntoSpans(events), [events]);
 
   if (spans.length === 0) {
@@ -119,9 +122,9 @@ export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
                   styles.spanBadge,
                   {
                     backgroundColor:
-                      availCapped >= 60 ? COLORS.successLight :
-                      availCapped >= 30 ? COLORS.warningLight :
-                      COLORS.dangerLight,
+                      availCapped >= 60 ? colors.successLight :
+                      availCapped >= 30 ? colors.warningLight :
+                      colors.dangerLight,
                   },
                 ]}
               >
@@ -130,9 +133,9 @@ export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
                     styles.spanBadgeText,
                     {
                       color:
-                        availCapped >= 60 ? COLORS.success :
-                        availCapped >= 30 ? COLORS.warning :
-                        COLORS.danger,
+                        availCapped >= 60 ? colors.success :
+                        availCapped >= 30 ? colors.warning :
+                        colors.danger,
                     },
                   ]}
                 >
@@ -147,9 +150,9 @@ export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     marginHorizontal: SPACING.md,
@@ -163,11 +166,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
   },
   subtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.md,
   },
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   spansList: {
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: colors.borderLight,
   },
   spanDates: {
     width: 110,
@@ -200,11 +203,11 @@ const styles = StyleSheet.create({
   spanDateText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
   },
   spanDateSeparator: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
   },
   spanDetails: {
     flex: 1,
@@ -213,11 +216,11 @@ const styles = StyleSheet.create({
   spanFreed: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.success,
+    color: colors.success,
   },
   spanCumulative: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   spanBadge: {

@@ -15,10 +15,13 @@ import { TripCard } from '../src/components/TripCard';
 import { TripForm } from '../src/components/TripForm';
 import { Trip } from '../src/types';
 import { getSchengenStatus } from '../src/utils/schengen';
-import { COLORS, SPACING, FONT_SIZE, RADIUS, SCHENGEN } from '../src/constants/theme';
+import { SPACING, FONT_SIZE, RADIUS, SCHENGEN , ThemeColors } from '../src/constants/theme';
+import { useTheme } from '../src/hooks/ThemeContext';
 
 export default function TripsScreen() {
   const { trips, addTrip, updateTrip, deleteTrip, loading } = useTripsContext();
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [formVisible, setFormVisible] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
@@ -116,13 +119,13 @@ export default function TripsScreen() {
                 </Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryValue, { color: COLORS.primary }]}>
+                <Text style={[styles.summaryValue, { color: colors.primary }]}>
                   {status.daysUsed}
                 </Text>
                 <Text style={styles.summaryLabel}>days used</Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryValue, { color: COLORS.success }]}>
+                <Text style={[styles.summaryValue, { color: colors.success }]}>
                   {status.daysRemaining}
                 </Text>
                 <Text style={styles.summaryLabel}>remaining</Text>
@@ -167,7 +170,7 @@ export default function TripsScreen() {
       />
 
       <TouchableOpacity style={styles.fab} onPress={handleAdd} activeOpacity={0.8}>
-        <Ionicons name="add" size={28} color={COLORS.textInverse} />
+        <Ionicons name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
       <TripForm
@@ -181,10 +184,10 @@ export default function TripsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   listContent: {
     paddingTop: SPACING.md,
@@ -196,7 +199,7 @@ const styles = StyleSheet.create({
   },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     justifyContent: 'space-around',
@@ -212,11 +215,11 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.text,
+    color: colors.text,
   },
   summaryLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyState: {
@@ -224,7 +227,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.lg,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
   },
   emptyEmoji: {
@@ -234,12 +237,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: SPACING.sm,
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -250,10 +253,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -261,7 +264,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 28,
-    color: COLORS.textInverse,
+    color: colors.textInverse,
     fontWeight: '400',
     lineHeight: 30,
   },
@@ -275,18 +278,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: RADIUS.sm,
     marginBottom: SPACING.sm,
   },
   pastHeaderText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   pastToggle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

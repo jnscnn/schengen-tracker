@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { useAuth } from '../hooks/AuthContext';
 
 export function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const { login, register } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
@@ -45,7 +48,7 @@ export function LoginScreen() {
 
   return (
     <LinearGradient
-      colors={['#E0E7FF', '#F5F7FF', '#FFFFFF']}
+      colors={[colors.primaryLight, colors.background, colors.surface]}
       style={styles.gradient}
     >
       <KeyboardAvoidingView
@@ -67,7 +70,7 @@ export function LoginScreen() {
                   value={username}
                   onChangeText={setUsername}
                   placeholder="Username"
-                  placeholderTextColor={COLORS.textTertiary}
+                  placeholderTextColor={colors.textTertiary}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -78,7 +81,7 @@ export function LoginScreen() {
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Password"
-                  placeholderTextColor={COLORS.textTertiary}
+                  placeholderTextColor={colors.textTertiary}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
@@ -128,7 +131,7 @@ export function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   gradient: {
     flex: 1,
   },
@@ -141,7 +144,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     paddingTop: SPACING.xxl,
@@ -164,11 +167,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.text,
+    color: colors.text,
   },
   subtitle: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.xl,
   },
@@ -180,14 +183,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     paddingVertical: 14,
     fontSize: FONT_SIZE.lg,
-    color: COLORS.text,
+    color: colors.text,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   eyeButton: {
     position: 'absolute',
@@ -201,29 +204,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   errorBox: {
-    backgroundColor: COLORS.dangerLight,
+    backgroundColor: colors.dangerLight,
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
     textAlign: 'center',
   },
   button: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     borderRadius: RADIUS.lg,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: COLORS.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
   buttonText: {
-    color: COLORS.textInverse,
+    color: colors.textInverse,
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
   },
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   switchText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },

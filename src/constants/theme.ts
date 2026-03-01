@@ -1,4 +1,4 @@
-export const COLORS = {
+const LIGHT_COLORS = {
   primary: '#4F6BF0',
   primaryDark: '#3B52CC',
   primaryLight: '#E0E7FF',
@@ -28,6 +28,47 @@ export const COLORS = {
   freeDay: '#E2E8F0',
   todayRing: '#8B5CF6',
 };
+
+const DARK_COLORS: typeof LIGHT_COLORS = {
+  primary: '#6B8AF2',
+  primaryDark: '#5A7BEE',
+  primaryLight: '#1E2A4A',
+  accent: '#A78BFA',
+  accentLight: '#2D2250',
+
+  success: '#34D399',
+  successLight: '#064E3B',
+  warning: '#FBBF24',
+  warningLight: '#451A03',
+  danger: '#F87171',
+  dangerLight: '#450A0A',
+
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceSecondary: '#334155',
+
+  text: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textTertiary: '#64748B',
+  textInverse: '#0F172A',
+
+  border: '#334155',
+  borderLight: '#1E293B',
+
+  schengenDay: '#6B8AF2',
+  freeDay: '#334155',
+  todayRing: '#A78BFA',
+};
+
+export type ColorScheme = 'light' | 'dark';
+export type ThemeColors = typeof LIGHT_COLORS;
+
+export function getColors(scheme: ColorScheme): ThemeColors {
+  return scheme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+}
+
+// Default export for backward compat — overridden at runtime by ThemeContext
+export let COLORS = LIGHT_COLORS;
 
 export const SPACING = {
   xs: 4,

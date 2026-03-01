@@ -10,7 +10,8 @@ import { Calendar, DateData } from 'react-native-calendars';
 import { format, parseISO, addDays, differenceInDays, eachDayOfInterval } from 'date-fns';
 import { useTripsContext } from '../src/hooks/TripsContext';
 import { planTrip, findNextEntryDate, getSchengenStatus, countDaysInWindow, getResetSchedule } from '../src/utils/schengen';
-import { COLORS, SPACING, FONT_SIZE, RADIUS, SCHENGEN } from '../src/constants/theme';
+import { SPACING, FONT_SIZE, RADIUS, SCHENGEN , ThemeColors } from '../src/constants/theme';
+import { useTheme } from '../src/hooks/ThemeContext';
 import { subDays, startOfDay } from 'date-fns';
 
 type PlannerMode = 'max' | 'custom';
@@ -18,6 +19,8 @@ type CustomPhase = 'start' | 'end';
 
 export default function PlannerScreen() {
   const { trips } = useTripsContext();
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [mode, setMode] = useState<PlannerMode>('max');
 
   // Max stay mode
@@ -136,16 +139,16 @@ export default function PlannerScreen() {
       const days = eachDayOfInterval({ start, end });
       days.forEach((d, i) => {
         marks[format(d, 'yyyy-MM-dd')] = {
-          color: COLORS.primary,
-          textColor: COLORS.textInverse,
+          color: colors.primary,
+          textColor: colors.textInverse,
           startingDay: i === 0,
           endingDay: i === days.length - 1,
         };
       });
     } else if (selectedDate) {
       marks[selectedDate] = {
-        color: planResult?.canStay === false ? COLORS.danger : COLORS.primary,
-        textColor: COLORS.textInverse,
+        color: planResult?.canStay === false ? colors.danger : colors.primary,
+        textColor: colors.textInverse,
         startingDay: true,
         endingDay: true,
       };
@@ -162,8 +165,8 @@ export default function PlannerScreen() {
         const isOver = customAnalysis?.overLimit;
         days.forEach((d, i) => {
           marks[format(d, 'yyyy-MM-dd')] = {
-            color: isOver ? COLORS.danger : COLORS.accent,
-            textColor: COLORS.textInverse,
+            color: isOver ? colors.danger : colors.accent,
+            textColor: colors.textInverse,
             startingDay: i === 0,
             endingDay: i === days.length - 1,
           };
@@ -171,8 +174,8 @@ export default function PlannerScreen() {
       } catch {}
     } else if (customStart) {
       marks[customStart] = {
-        color: COLORS.accent,
-        textColor: COLORS.textInverse,
+        color: colors.accent,
+        textColor: colors.textInverse,
         startingDay: true,
         endingDay: true,
       };
@@ -199,14 +202,14 @@ export default function PlannerScreen() {
   };
 
   const calendarTheme = {
-    backgroundColor: COLORS.surface,
-    calendarBackground: COLORS.surface,
-    textSectionTitleColor: COLORS.textSecondary,
-    todayTextColor: COLORS.accent,
-    dayTextColor: COLORS.text,
-    textDisabledColor: COLORS.textTertiary,
-    arrowColor: COLORS.primary,
-    monthTextColor: COLORS.text,
+    backgroundColor: colors.surface,
+    calendarBackground: colors.surface,
+    textSectionTitleColor: colors.textSecondary,
+    todayTextColor: colors.accent,
+    dayTextColor: colors.text,
+    textDisabledColor: colors.textTertiary,
+    arrowColor: colors.primary,
+    monthTextColor: colors.text,
     textMonthFontWeight: '700' as const,
     textDayFontSize: 15,
     textMonthFontSize: 16,
@@ -284,10 +287,10 @@ export default function PlannerScreen() {
                       </Text>
                     </View>
                     <View style={styles.resultDetails}>
-                      <ResultRow label="Days available on arrival" value={`${planResult.daysAvailableOnArrival}`} color={COLORS.primary} />
-                      <ResultRow label="Max consecutive stay" value={`${planResult.maxConsecutiveDays} days`} color={COLORS.success} />
+                      <ResultRow label="Days available on arrival" value={`${planResult.daysAvailableOnArrival}`} color={colors.primary} />
+                      <ResultRow label="Max consecutive stay" value={`${planResult.maxConsecutiveDays} days`} color={colors.success} />
                       {planResult.warningDate && (
-                        <ResultRow label="Must leave by" value={format(parseISO(planResult.warningDate), 'MMM d, yyyy')} color={COLORS.warning} />
+                        <ResultRow label="Must leave by" value={format(parseISO(planResult.warningDate), 'MMM d, yyyy')} color={colors.warning} />
                       )}
                     </View>
                   </>
@@ -348,9 +351,9 @@ export default function PlannerScreen() {
                       <Text style={styles.resultTitle}>This trip works!</Text>
                     </View>
                     <View style={styles.resultDetails}>
-                      <ResultRow label="Trip duration" value={`${customAnalysis.tripDays} days`} color={COLORS.text} />
-                      <ResultRow label="Days used after trip" value={`${customAnalysis.totalUsedAtDeparture} / 90`} color={COLORS.primary} />
-                      <ResultRow label="Days remaining after" value={`${customAnalysis.daysRemainingAfter}`} color={COLORS.success} />
+                      <ResultRow label="Trip duration" value={`${customAnalysis.tripDays} days`} color={colors.text} />
+                      <ResultRow label="Days used after trip" value={`${customAnalysis.totalUsedAtDeparture} / 90`} color={colors.primary} />
+                      <ResultRow label="Days remaining after" value={`${customAnalysis.daysRemainingAfter}`} color={colors.success} />
                     </View>
                   </>
                 ) : (
@@ -360,8 +363,8 @@ export default function PlannerScreen() {
                       <Text style={styles.resultTitle}>This trip exceeds the limit!</Text>
                     </View>
                     <View style={styles.resultDetails}>
-                      <ResultRow label="Trip duration" value={`${customAnalysis.tripDays} days`} color={COLORS.text} />
-                      <ResultRow label="Over limit starting" value={format(parseISO(customAnalysis.firstOverDate!), 'MMM d, yyyy')} color={COLORS.danger} />
+                      <ResultRow label="Trip duration" value={`${customAnalysis.tripDays} days`} color={colors.text} />
+                      <ResultRow label="Over limit starting" value={format(parseISO(customAnalysis.firstOverDate!), 'MMM d, yyyy')} color={colors.danger} />
                     </View>
                     <Text style={styles.resultSubtext}>
                       You would exceed 90 days in the rolling 180-day window during this trip.
@@ -395,7 +398,7 @@ export default function PlannerScreen() {
                     )}
                   </View>
                   <Text style={styles.resetFreed}>+{span.freed}d</Text>
-                  <Text style={[styles.resetAvail, { color: avail >= 60 ? COLORS.success : avail >= 30 ? COLORS.warning : COLORS.danger }]}>
+                  <Text style={[styles.resetAvail, { color: avail >= 60 ? colors.success : avail >= 30 ? colors.warning : colors.danger }]}>
                     → {avail} avail
                   </Text>
                 </View>
@@ -425,6 +428,8 @@ export default function PlannerScreen() {
 }
 
 function ResultRow({ label, value, color }: { label: string; value: string; color: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   return (
     <View style={styles.resultRow}>
       <Text style={styles.resultLabel}>{label}</Text>
@@ -434,31 +439,33 @@ function ResultRow({ label, value, color }: { label: string; value: string; colo
 }
 
 function QuickCard({ label, date, available }: { label: string; date: string | null; available: boolean }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   return (
     <View style={[styles.quickCard, available && styles.quickCardAvailable]}>
       <Text style={styles.quickCardLabel}>{label}</Text>
       {available ? (
-        <Text style={[styles.quickCardDate, { color: COLORS.success }]}>Now! ✓</Text>
+        <Text style={[styles.quickCardDate, { color: colors.success }]}>Now! ✓</Text>
       ) : date ? (
-        <Text style={[styles.quickCardDate, { color: COLORS.warning }]}>{format(parseISO(date), 'MMM d')}</Text>
+        <Text style={[styles.quickCardDate, { color: colors.warning }]}>{format(parseISO(date), 'MMM d')}</Text>
       ) : (
-        <Text style={[styles.quickCardDate, { color: COLORS.textTertiary }]}>365+ days</Text>
+        <Text style={[styles.quickCardDate, { color: colors.textTertiary }]}>365+ days</Text>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { paddingBottom: SPACING.xxl },
   section: { paddingHorizontal: SPACING.md, marginTop: SPACING.lg },
-  sectionTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: COLORS.text },
-  sectionSubtitle: { fontSize: FONT_SIZE.sm, color: COLORS.textSecondary, marginTop: SPACING.xs, marginBottom: SPACING.md },
+  sectionTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: colors.text },
+  sectionSubtitle: { fontSize: FONT_SIZE.sm, color: colors.textSecondary, marginTop: SPACING.xs, marginBottom: SPACING.md },
 
   // Mode toggle
   modeToggle: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: RADIUS.md,
     padding: 3,
     marginTop: SPACING.sm,
@@ -471,16 +478,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
-  modeButtonText: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.textSecondary },
-  modeButtonTextActive: { color: COLORS.primary },
-  modeHint: { fontSize: FONT_SIZE.sm, color: COLORS.textSecondary, marginBottom: SPACING.sm, textAlign: 'center' },
+  modeButtonText: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.textSecondary },
+  modeButtonTextActive: { color: colors.primary },
+  modeHint: { fontSize: FONT_SIZE.sm, color: colors.textSecondary, marginBottom: SPACING.sm, textAlign: 'center' },
 
   // Date display for custom mode
   dateDisplayRow: {
@@ -492,74 +499,74 @@ const styles = StyleSheet.create({
   },
   dateDisplay: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.sm,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
-  dateDisplayActive: { borderColor: COLORS.accent, backgroundColor: '#F5F3FF' },
-  dateDisplayLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase' },
-  dateDisplayValue: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text, marginTop: 2 },
-  dateArrow: { fontSize: FONT_SIZE.lg, color: COLORS.textTertiary },
+  dateDisplayActive: { borderColor: colors.accent, backgroundColor: '#F5F3FF' },
+  dateDisplayLabel: { fontSize: FONT_SIZE.xs, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase' },
+  dateDisplayValue: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text, marginTop: 2 },
+  dateArrow: { fontSize: FONT_SIZE.lg, color: colors.textTertiary },
 
   // Calendar & banner
   selectedDateBanner: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: colors.primaryLight,
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
-  selectedDateText: { fontSize: FONT_SIZE.md, fontWeight: '600', color: COLORS.primaryDark },
+  selectedDateText: { fontSize: FONT_SIZE.md, fontWeight: '600', color: colors.primaryDark },
   calendar: { borderRadius: RADIUS.md, overflow: 'hidden' },
 
   // Quick cards
   quickCards: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   quickCard: {
-    flex: 1, minWidth: 140, backgroundColor: COLORS.surface, borderRadius: RADIUS.md,
+    flex: 1, minWidth: 140, backgroundColor: colors.surface, borderRadius: RADIUS.md,
     padding: SPACING.md, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
-  quickCardAvailable: { borderWidth: 1, borderColor: COLORS.success },
-  quickCardLabel: { fontSize: FONT_SIZE.sm, color: COLORS.textSecondary, marginBottom: SPACING.xs },
+  quickCardAvailable: { borderWidth: 1, borderColor: colors.success },
+  quickCardLabel: { fontSize: FONT_SIZE.sm, color: colors.textSecondary, marginBottom: SPACING.xs },
   quickCardDate: { fontSize: FONT_SIZE.md, fontWeight: '700' },
 
   // Result card
   resultCard: {
-    backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.md,
+    backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.md,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
   },
   resultHeader: { alignItems: 'center', gap: SPACING.sm },
   resultEmoji: { fontSize: 32 },
-  resultTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
-  resultSubtext: { fontSize: FONT_SIZE.sm, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20, marginTop: SPACING.sm },
+  resultTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  resultSubtext: { fontSize: FONT_SIZE.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginTop: SPACING.sm },
   resultDetails: { marginTop: SPACING.md, gap: SPACING.xs },
   resultRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  resultLabel: { fontSize: FONT_SIZE.md, color: COLORS.textSecondary },
+  resultLabel: { fontSize: FONT_SIZE.md, color: colors.textSecondary },
   resultValue: { fontSize: FONT_SIZE.lg, fontWeight: '700' },
 
   // Info
-  infoBox: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.lg, gap: SPACING.md },
-  infoText: { fontSize: FONT_SIZE.md, color: COLORS.textSecondary, lineHeight: 22 },
-  bold: { fontWeight: '700', color: COLORS.text },
+  infoBox: { backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACING.lg, gap: SPACING.md },
+  infoText: { fontSize: FONT_SIZE.md, color: colors.textSecondary, lineHeight: 22 },
+  bold: { fontWeight: '700', color: colors.text },
 
   // Resets section
   resetsCard: {
-    backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.md,
+    backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACING.md,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
   },
   resetRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.xs,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderLight, gap: SPACING.sm,
+    borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: SPACING.sm,
   },
   resetDates: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  resetDateText: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
-  resetArrow: { fontSize: FONT_SIZE.xs, color: COLORS.textTertiary },
-  resetFreed: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.success, width: 40, textAlign: 'right' },
+  resetDateText: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
+  resetArrow: { fontSize: FONT_SIZE.xs, color: colors.textTertiary },
+  resetFreed: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.success, width: 40, textAlign: 'right' },
   resetAvail: { fontSize: FONT_SIZE.sm, fontWeight: '600', width: 70, textAlign: 'right' },
 });

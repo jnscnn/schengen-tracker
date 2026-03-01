@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { format, parseISO, differenceInDays, eachDayOfInterval, isBefore, isAfter, startOfDay } from 'date-fns';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { Trip } from '../types';
 import { generateId } from '../utils/schengen';
 
@@ -27,6 +28,8 @@ interface TripFormProps {
 type SelectionPhase = 'start' | 'end';
 
 export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: TripFormProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [note, setNote] = useState('');
@@ -79,8 +82,8 @@ export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: Tri
         days.forEach((d, i) => {
           const key = format(d, 'yyyy-MM-dd');
           marks[key] = {
-            color: COLORS.primary,
-            textColor: COLORS.textInverse,
+            color: colors.primary,
+            textColor: colors.textInverse,
             startingDay: i === 0,
             endingDay: i === days.length - 1,
           };
@@ -88,8 +91,8 @@ export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: Tri
       } catch {}
     } else if (startDate) {
       marks[startDate] = {
-        color: COLORS.primary,
-        textColor: COLORS.textInverse,
+        color: colors.primary,
+        textColor: colors.textInverse,
         startingDay: true,
         endingDay: true,
       };
@@ -207,16 +210,16 @@ export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: Tri
               onDayPress={handleDayPress}
               initialDate={startDate || undefined}
               theme={{
-                backgroundColor: COLORS.surface,
-                calendarBackground: COLORS.surface,
-                textSectionTitleColor: COLORS.textSecondary,
-                selectedDayBackgroundColor: COLORS.primary,
-                selectedDayTextColor: COLORS.textInverse,
-                todayTextColor: COLORS.accent,
-                dayTextColor: COLORS.text,
-                textDisabledColor: COLORS.textTertiary,
-                arrowColor: COLORS.primary,
-                monthTextColor: COLORS.text,
+                backgroundColor: colors.surface,
+                calendarBackground: colors.surface,
+                textSectionTitleColor: colors.textSecondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: colors.textInverse,
+                todayTextColor: colors.accent,
+                dayTextColor: colors.text,
+                textDisabledColor: colors.textTertiary,
+                arrowColor: colors.primary,
+                monthTextColor: colors.text,
                 textMonthFontWeight: '700',
                 textDayFontSize: 15,
                 textMonthFontSize: 16,
@@ -233,7 +236,7 @@ export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: Tri
                 value={note}
                 onChangeText={setNote}
                 placeholder="e.g., Berlin trip, Christmas visit..."
-                placeholderTextColor={COLORS.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
 
@@ -263,10 +266,10 @@ export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: Tri
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -277,23 +280,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.md,
     paddingTop: SPACING.xl,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
   },
   cancelButton: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   saveButton: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: colors.primary,
   },
   form: {
     padding: SPACING.md,
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
   promptText: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: COLORS.text,
+    color: colors.text,
   },
   dateDisplayRow: {
     flexDirection: 'row',
@@ -316,38 +319,38 @@ const styles = StyleSheet.create({
   },
   dateDisplay: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   dateDisplayActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryLight,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
   dateDisplayLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   dateDisplayValue: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     marginTop: 4,
   },
   dateArrow: {
     fontSize: FONT_SIZE.xl,
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
   },
   durationText: {
     textAlign: 'center',
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: colors.primary,
   },
   calendar: {
     borderRadius: RADIUS.md,
@@ -359,39 +362,39 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.text,
+    color: colors.text,
   },
   input: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     fontSize: FONT_SIZE.lg,
-    color: COLORS.text,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   errorContainer: {
-    backgroundColor: COLORS.dangerLight,
+    backgroundColor: colors.dangerLight,
     padding: SPACING.md,
     borderRadius: RADIUS.sm,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },
   warningContainer: {
-    backgroundColor: COLORS.warningLight,
+    backgroundColor: colors.warningLight,
     padding: SPACING.md,
     borderRadius: RADIUS.sm,
   },
   warningText: {
-    color: COLORS.warning,
+    color: colors.warning,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },
   infoBox: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: colors.primaryLight,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
     gap: SPACING.xs,
@@ -399,11 +402,11 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '700',
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
   },
   infoText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     lineHeight: 20,
   },
 });

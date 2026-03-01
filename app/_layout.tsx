@@ -1,20 +1,24 @@
 import React from 'react';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripsProvider } from '../src/hooks/TripsContext';
 import { AuthProvider, useAuth } from '../src/hooks/AuthContext';
+import { ThemeProvider, useTheme } from '../src/hooks/ThemeContext';
 import { LoginScreen } from '../src/components/LoginScreen';
-import { COLORS, FONT_SIZE, SPACING } from '../src/constants/theme';
+import { FONT_SIZE } from '../src/constants/theme';
 
 function AppContent() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
+  const { colors, scheme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -27,12 +31,19 @@ function AppContent() {
     <TripsProvider>
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: COLORS.background },
-          headerTitleStyle: { fontWeight: '700', fontSize: FONT_SIZE.lg, color: COLORS.text },
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { fontWeight: '700', fontSize: FONT_SIZE.lg, color: colors.text },
           headerShadowVisible: false,
-          tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, paddingTop: 4 },
-          tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: COLORS.textTertiary,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            paddingTop: 4,
+            // Extra padding for home indicator bar
+            paddingBottom: Math.max(insets.bottom, 8),
+            height: 56 + Math.max(insets.bottom, 8),
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textTertiary,
           tabBarLabelStyle: { fontSize: FONT_SIZE.xs, fontWeight: '600' },
         }}
       >
@@ -41,7 +52,7 @@ function AppContent() {
           options={{
             title: 'Dashboard',
             tabBarLabel: 'Home',
-            tabBarIcon: ({ color, size }) => <Ionicons name="home" size={22} color={color} />,
+            tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
           }}
         />
         <Tabs.Screen
@@ -49,7 +60,7 @@ function AppContent() {
           options={{
             title: 'My Trips',
             tabBarLabel: 'Trips',
-            tabBarIcon: ({ color, size }) => <Ionicons name="airplane" size={22} color={color} />,
+            tabBarIcon: ({ color }) => <Ionicons name="airplane" size={22} color={color} />,
           }}
         />
         <Tabs.Screen
@@ -57,7 +68,7 @@ function AppContent() {
           options={{
             title: 'Trip Planner',
             tabBarLabel: 'Plan',
-            tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={22} color={color} />,
+            tabBarIcon: ({ color }) => <Ionicons name="calendar" size={22} color={color} />,
           }}
         />
       </Tabs>
@@ -67,10 +78,19 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <AppContent />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ThemedStatusBar />
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
+}
+
+function ThemedStatusBar() {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 }
 

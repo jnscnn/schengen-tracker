@@ -17,7 +17,8 @@ import {
   isBefore,
   isAfter,
 } from 'date-fns';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { Trip } from '../types';
 import { SCHENGEN } from '../constants/theme';
 
@@ -52,6 +53,8 @@ function CompactMonth({
   windowEnd: Date;
   today: Date;
 }) {
+  const { colors } = useTheme();
+  const compactStyles = useMemo(() => getCompactStyles(colors), [colors]);
   const monthStart = startOfMonth(new Date(year, month, 1));
   const monthEnd = endOfMonth(monthStart);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -107,21 +110,21 @@ function CompactMonth({
                   style={[
                     compactStyles.dayCell,
                     // Past/present days in window
-                    inWindow && inSchengen && { backgroundColor: COLORS.schengenDay },
-                    inWindow && !inSchengen && !isFuture && { backgroundColor: COLORS.surfaceSecondary },
+                    inWindow && inSchengen && { backgroundColor: colors.schengenDay },
+                    inWindow && !inSchengen && !isFuture && { backgroundColor: colors.surfaceSecondary },
                     // Future planned days (light blue)
-                    isFuture && { backgroundColor: COLORS.primaryLight },
+                    isFuture && { backgroundColor: colors.primaryLight },
                     // Outside window and not future
-                    !inWindow && !isFuture && { backgroundColor: COLORS.borderLight, opacity: 0.35 },
+                    !inWindow && !isFuture && { backgroundColor: colors.borderLight, opacity: 0.35 },
                     isToday && compactStyles.todayCell,
                   ]}
                 >
                   <Text
                     style={[
                       compactStyles.dayNumber,
-                      inSchengen && inWindow && { color: COLORS.textInverse },
-                      isFuture && !inSchengen && { color: COLORS.primary, fontWeight: '600' },
-                      isToday && !inSchengen && !isFuture && { color: COLORS.accent, fontWeight: '700' },
+                      inSchengen && inWindow && { color: colors.textInverse },
+                      isFuture && !inSchengen && { color: colors.primary, fontWeight: '600' },
+                      isToday && !inSchengen && !isFuture && { color: colors.accent, fontWeight: '700' },
                     ]}
                   >
                     {getDate(day)}
@@ -137,6 +140,8 @@ function CompactMonth({
 }
 
 export function Timeline({ trips, referenceDate }: TimelineProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const today = startOfDay(referenceDate || new Date());
   const windowStart = subDays(today, SCHENGEN.WINDOW_DAYS - 1);
 
@@ -234,19 +239,19 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
 
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.schengenDay }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.schengenDay }]} />
           <Text style={styles.legendText}>In Schengen</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.primaryLight }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.primaryLight }]} />
           <Text style={styles.legendText}>Planned</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.surfaceSecondary }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.surfaceSecondary }]} />
           <Text style={styles.legendText}>Outside</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.surfaceSecondary, borderWidth: 1.5, borderColor: COLORS.accent }]} />
+          <View style={[styles.legendDot, { backgroundColor: colors.surfaceSecondary, borderWidth: 1.5, borderColor: colors.accent }]} />
           <Text style={styles.legendText}>Today</Text>
         </View>
       </View>
@@ -256,7 +261,7 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
 
 const MONTH_WIDTH = 7 * CELL_SIZE + 6 * CELL_GAP + 8; // cells + gaps + padding
 
-const compactStyles = StyleSheet.create({
+const getCompactStyles = (colors: ThemeColors) => StyleSheet.create({
   monthContainer: {
     width: MONTH_WIDTH,
     marginBottom: SPACING.md,
@@ -265,7 +270,7 @@ const compactStyles = StyleSheet.create({
   monthTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 4,
     textAlign: 'center',
   },
@@ -284,7 +289,7 @@ const compactStyles = StyleSheet.create({
   dayHeader: {
     fontSize: 7,
     fontWeight: '600',
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
     textAlign: 'center',
   },
   dayCell: {
@@ -296,18 +301,18 @@ const compactStyles = StyleSheet.create({
   },
   dayNumber: {
     fontSize: 9,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   todayCell: {
     borderWidth: 1.5,
-    borderColor: COLORS.accent,
+    borderColor: colors.accent,
   },
 });
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
     marginHorizontal: SPACING.md,
@@ -321,12 +326,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     paddingHorizontal: SPACING.xs,
   },
   subtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
@@ -345,7 +350,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: colors.borderLight,
   },
   legendItem: {
     flexDirection: 'row',
@@ -359,6 +364,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 });

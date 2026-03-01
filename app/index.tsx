@@ -8,13 +8,16 @@ import { ResetSchedule } from '../src/components/ResetSchedule';
 import { useTripsContext } from '../src/hooks/TripsContext';
 import { useAuth } from '../src/hooks/AuthContext';
 import { getSchengenStatus, getResetSchedule, findNextEntryDate } from '../src/utils/schengen';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../src/constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../src/constants/theme';
+import { useTheme } from '../src/hooks/ThemeContext';
 import { format, parseISO, differenceInDays, startOfDay, isBefore } from 'date-fns';
 
 export default function DashboardScreen() {
   const { trips, loading, refresh } = useTripsContext();
   const { logout } = useAuth();
   const router = useRouter();
+  const { colors, scheme, toggle } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const status = useMemo(() => getSchengenStatus(trips), [trips]);
   const resetEvents = useMemo(() => getResetSchedule(trips), [trips]);
@@ -50,10 +53,15 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={loading} onRefresh={refresh} />
       }
     >
-      {/* Logout in top-right */}
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Ionicons name="log-out-outline" size={18} color={COLORS.textTertiary} />
-      </TouchableOpacity>
+      {/* Header buttons: theme toggle + logout */}
+      <View style={styles.headerButtons}>
+        <TouchableOpacity style={styles.headerButton} onPress={toggle}>
+          <Ionicons name={scheme === 'dark' ? 'sunny' : 'moon'} size={18} color={colors.textTertiary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.headerButton} onPress={logout}>
+          <Ionicons name="log-out-outline" size={18} color={colors.textTertiary} />
+        </TouchableOpacity>
+      </View>
 
       <DaysCounter status={status} />
 
@@ -85,7 +93,7 @@ export default function DashboardScreen() {
             style={styles.emptyButton}
             onPress={() => router.push('/trips')}
           >
-            <Ionicons name="add-circle" size={20} color={COLORS.textInverse} />
+            <Ionicons name="add-circle" size={20} color={colors.textInverse} />
             <Text style={styles.emptyButtonText}>Add Your First Trip</Text>
           </TouchableOpacity>
         </View>
@@ -96,36 +104,36 @@ export default function DashboardScreen() {
           {/* Quick Info Cards */}
           <View style={styles.infoCards}>
             {status.currentTrip && (
-              <View style={[styles.infoCard, { backgroundColor: COLORS.primaryLight }]}>
+              <View style={[styles.infoCard, { backgroundColor: colors.primaryLight }]}>
                 <Text style={styles.infoCardEmoji}>📍</Text>
-                <Text style={[styles.infoCardTitle, { color: COLORS.primaryDark }]}>
+                <Text style={[styles.infoCardTitle, { color: colors.primaryDark }]}>
                   Currently in Schengen
                 </Text>
-                <Text style={[styles.infoCardValue, { color: COLORS.primaryDark }]}>
+                <Text style={[styles.infoCardValue, { color: colors.primaryDark }]}>
                   {status.currentTrip.note || 'Current trip'}
                 </Text>
               </View>
             )}
 
             {nextFullReset && (
-              <View style={[styles.infoCard, { backgroundColor: COLORS.successLight }]}>
+              <View style={[styles.infoCard, { backgroundColor: colors.successLight }]}>
                 <Text style={styles.infoCardEmoji}>🔄</Text>
-                <Text style={[styles.infoCardTitle, { color: COLORS.success }]}>
+                <Text style={[styles.infoCardTitle, { color: colors.success }]}>
                   Full 90 days available
                 </Text>
-                <Text style={[styles.infoCardValue, { color: COLORS.success }]}>
+                <Text style={[styles.infoCardValue, { color: colors.success }]}>
                   {format(parseISO(nextFullReset), 'MMM d, yyyy')}
                 </Text>
               </View>
             )}
 
             {next30DayEntry && (
-              <View style={[styles.infoCard, { backgroundColor: COLORS.warningLight }]}>
+              <View style={[styles.infoCard, { backgroundColor: colors.warningLight }]}>
                 <Text style={styles.infoCardEmoji}>📅</Text>
-                <Text style={[styles.infoCardTitle, { color: COLORS.warning }]}>
+                <Text style={[styles.infoCardTitle, { color: colors.warning }]}>
                   Can stay 30+ days from
                 </Text>
-                <Text style={[styles.infoCardValue, { color: COLORS.warning }]}>
+                <Text style={[styles.infoCardValue, { color: colors.warning }]}>
                   {format(parseISO(next30DayEntry), 'MMM d, yyyy')}
                 </Text>
               </View>
@@ -147,25 +155,29 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     paddingBottom: SPACING.xxl,
   },
-  logoutButton: {
+  headerButtons: {
     position: 'absolute',
     right: SPACING.md,
     top: SPACING.sm,
-    padding: SPACING.sm,
+    flexDirection: 'row',
+    gap: SPACING.xs,
     zIndex: 10,
+  },
+  headerButton: {
+    padding: SPACING.sm,
   },
   nextTripBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accentLight,
+    backgroundColor: colors.accentLight,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
     padding: SPACING.md,
@@ -178,11 +190,11 @@ const styles = StyleSheet.create({
   nextTripText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: colors.accent,
   },
   nextTripDate: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyState: {
@@ -190,7 +202,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.lg,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
   },
   emptyEmoji: {
@@ -200,12 +212,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: SPACING.sm,
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: SPACING.lg,
@@ -214,13 +226,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm + 2,
     borderRadius: RADIUS.lg,
   },
   emptyButtonText: {
-    color: COLORS.textInverse,
+    color: colors.textInverse,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
@@ -258,7 +270,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
   },

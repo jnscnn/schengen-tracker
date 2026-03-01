@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect , useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedProps, withTiming, Easing } from 'react-native-reanimated';
 import { format, startOfDay, addDays } from 'date-fns';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { SchengenStatus } from '../types';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -56,15 +57,17 @@ function ProgressRing({
 }
 
 export function DaysCounter({ status }: DaysCounterProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const { daysRemaining, daysUsed, maxDays, isOverstay, currentTrip } = status;
   const today = startOfDay(new Date());
 
   const remainingFraction = daysRemaining / maxDays;
   const statusColor =
-    isOverstay ? COLORS.danger :
-    daysRemaining <= 7 ? COLORS.danger :
-    daysRemaining <= 20 ? COLORS.warning :
-    COLORS.success;
+    isOverstay ? colors.danger :
+    daysRemaining <= 7 ? colors.danger :
+    daysRemaining <= 20 ? colors.warning :
+    colors.success;
 
   const statusLabel =
     isOverstay ? '⚠️ OVERSTAY' :
@@ -89,7 +92,7 @@ export function DaysCounter({ status }: DaysCounterProps) {
       <View style={styles.ringContainer}>
         <ProgressRing
           size={ringSize} strokeWidth={ringStroke}
-          progress={remainingFraction} color={statusColor} bgColor={COLORS.surfaceSecondary}
+          progress={remainingFraction} color={statusColor} bgColor={colors.surfaceSecondary}
         />
         <View style={styles.ringContent}>
           <Text style={[styles.counter, { color: statusColor }]}>{daysRemaining}</Text>
@@ -105,7 +108,7 @@ export function DaysCounter({ status }: DaysCounterProps) {
         </View>
         <View style={styles.breakdownDivider} />
         <View style={styles.breakdownItem}>
-          <View style={[styles.breakdownDot, { backgroundColor: COLORS.surfaceSecondary }]} />
+          <View style={[styles.breakdownDot, { backgroundColor: colors.surfaceSecondary }]} />
           <Text style={styles.breakdownValue}>{daysRemaining}</Text>
           <Text style={styles.breakdownLabel}>remaining</Text>
         </View>
@@ -118,7 +121,7 @@ export function DaysCounter({ status }: DaysCounterProps) {
             <Text style={styles.leaveIcon}>🚨</Text>
             <View style={styles.leaveDetail}>
               <Text style={styles.leaveLabel}>Must leave by</Text>
-              <Text style={[styles.leaveDate, { color: COLORS.danger }]}>
+              <Text style={[styles.leaveDate, { color: colors.danger }]}>
                 {format(mustLeaveDate, 'MMM d, yyyy')}
               </Text>
             </View>
@@ -128,7 +131,7 @@ export function DaysCounter({ status }: DaysCounterProps) {
               <Text style={styles.leaveIcon}>✅</Text>
               <View style={styles.leaveDetail}>
                 <Text style={styles.leaveLabel}>Safe to leave by ({SAFETY_BUFFER}-day buffer)</Text>
-                <Text style={[styles.leaveDate, { color: COLORS.success }]}>
+                <Text style={[styles.leaveDate, { color: colors.success }]}>
                   {format(safeLeaveDate, 'MMM d, yyyy')}
                 </Text>
               </View>
@@ -138,8 +141,8 @@ export function DaysCounter({ status }: DaysCounterProps) {
       )}
 
       {isOverstay && (
-        <View style={[styles.alertBanner, { backgroundColor: COLORS.dangerLight }]}>
-          <Text style={[styles.alertText, { color: COLORS.danger }]}>
+        <View style={[styles.alertBanner, { backgroundColor: colors.dangerLight }]}>
+          <Text style={[styles.alertText, { color: colors.danger }]}>
             ⚠️ Over the 90-day limit by {daysUsed - maxDays} day(s)!{'\n'}
             If still in Schengen, exit immediately.
           </Text>
@@ -147,8 +150,8 @@ export function DaysCounter({ status }: DaysCounterProps) {
       )}
 
       {!isOverstay && daysRemaining <= 14 && daysRemaining > 0 && !currentTrip && (
-        <View style={[styles.alertBanner, { backgroundColor: COLORS.warningLight }]}>
-          <Text style={[styles.alertText, { color: COLORS.warning }]}>
+        <View style={[styles.alertBanner, { backgroundColor: colors.warningLight }]}>
+          <Text style={[styles.alertText, { color: colors.warning }]}>
             ⏰ Only {daysRemaining} days left — plan trips carefully
           </Text>
         </View>
@@ -157,9 +160,9 @@ export function DaysCounter({ status }: DaysCounterProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     marginHorizontal: SPACING.md,
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.sm,
   },
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
   },
   counterLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   breakdownRow: {
@@ -218,20 +221,20 @@ const styles = StyleSheet.create({
   breakdownValue: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
   },
   breakdownLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   breakdownDivider: {
     width: 1,
     height: 24,
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
   },
   leaveInfo: {
     marginTop: SPACING.md,
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     gap: SPACING.sm,
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
   },
   leaveLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   leaveDate: {
     fontSize: FONT_SIZE.md,

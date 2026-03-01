@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState , useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO, differenceInDays } from 'date-fns';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
+import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../constants/theme';
+import { useTheme } from '../hooks/ThemeContext';
 import { Trip } from '../types';
 
 interface TripCardProps {
@@ -13,6 +14,8 @@ interface TripCardProps {
 }
 
 export function TripCard({ trip, onEdit, onDelete, isActive }: TripCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [showActions, setShowActions] = useState(false);
   const startDate = parseISO(trip.startDate);
   const endDate = parseISO(trip.endDate);
@@ -45,17 +48,17 @@ export function TripCard({ trip, onEdit, onDelete, isActive }: TripCardProps) {
             ) : null}
           </View>
         </View>
-        <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textTertiary} />
+        <Ionicons name="ellipsis-horizontal" size={18} color={colors.textTertiary} />
       </View>
 
       {showActions && (
         <View style={styles.actions}>
           <TouchableOpacity style={styles.editButton} onPress={() => { onEdit(trip); setShowActions(false); }}>
-            <Ionicons name="pencil" size={14} color={COLORS.primary} />
+            <Ionicons name="pencil" size={14} color={colors.primary} />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteButton} onPress={() => { onDelete(trip.id); setShowActions(false); }}>
-            <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
+            <Ionicons name="trash-outline" size={14} color={colors.danger} />
             <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
         </View>
@@ -64,9 +67,9 @@ export function TripCard({ trip, onEdit, onDelete, isActive }: TripCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginHorizontal: SPACING.md,
@@ -79,7 +82,7 @@ const styles = StyleSheet.create({
   },
   activeContainer: {
     borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
+    borderLeftColor: colors.primary,
   },
   header: {
     flexDirection: 'row',
@@ -94,10 +97,10 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.text,
+    color: colors.text,
   },
   activeBadge: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
     borderRadius: RADIUS.full,
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: FONT_SIZE.xs,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: colors.primary,
   },
   details: {
     flexDirection: 'row',
@@ -114,19 +117,19 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   durationBadge: {
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: colors.surfaceSecondary,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
     borderRadius: RADIUS.full,
   },
   durationText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   note: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     flex: 1,
   },
   actions: {
@@ -135,7 +138,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: colors.borderLight,
     gap: SPACING.md,
   },
   editButton: {
@@ -145,11 +148,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: colors.surfaceSecondary,
   },
   editButtonText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   deleteButton: {
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.danger,
+    color: colors.danger,
     fontWeight: '600',
   },
 });
