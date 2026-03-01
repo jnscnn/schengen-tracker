@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   subDays,
+  addDays,
   startOfDay,
   startOfMonth,
   endOfMonth,
@@ -38,6 +39,7 @@ function CompactMonth({
   year,
   month,
   schengenDays,
+  futureDays,
   windowStart,
   windowEnd,
   today,
@@ -45,6 +47,7 @@ function CompactMonth({
   year: number;
   month: number;
   schengenDays: Set<string>;
+  futureDays: Set<string>;
   windowStart: Date;
   windowEnd: Date;
   today: Date;
@@ -91,19 +94,25 @@ function CompactMonth({
             }
             const key = format(day, 'yyyy-MM-dd');
             const inSchengen = schengenDays.has(key);
+            const isFuture = futureDays.has(key);
             const isToday = key === todayStr;
             const inWindow =
               (isAfter(day, windowStart) || isSameDay(day, windowStart)) &&
               (isBefore(day, windowEnd) || isSameDay(day, windowEnd));
+            const isPast = isBefore(day, today) && !isSameDay(day, today);
 
             return (
               <View key={key} style={compactStyles.cellWrapper}>
                 <View
                   style={[
                     compactStyles.dayCell,
+                    // Past/present days in window
                     inWindow && inSchengen && { backgroundColor: COLORS.schengenDay },
-                    inWindow && !inSchengen && { backgroundColor: COLORS.surfaceSecondary },
-                    !inWindow && { backgroundColor: COLORS.borderLight, opacity: 0.35 },
+                    inWindow && !inSchengen && !isFuture && { backgroundColor: COLORS.surfaceSecondary },
+                    // Future planned days (light blue)
+                    isFuture && { backgroundColor: COLORS.primaryLight },
+                    // Outside window and not future
+                    !inWindow && !isFuture && { backgroundColor: COLORS.borderLight, opacity: 0.35 },
                     isToday && compactStyles.todayCell,
                   ]}
                 >
@@ -111,7 +120,8 @@ function CompactMonth({
                     style={[
                       compactStyles.dayNumber,
                       inSchengen && inWindow && { color: COLORS.textInverse },
-                      isToday && !inSchengen && { color: COLORS.accent, fontWeight: '700' },
+                      isFuture && !inSchengen && { color: COLORS.primary, fontWeight: '600' },
+                      isToday && !inSchengen && !isFuture && { color: COLORS.accent, fontWeight: '700' },
                     ]}
                   >
                     {getDate(day)}
@@ -135,13 +145,44 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
     for (const trip of trips) {
       const tripStart = parseISO(trip.startDate);
       const tripEnd = parseISO(trip.endDate);
-      const interval = eachDayOfInterval({ start: tripStart, end: tripEnd });
-      for (const d of interval) {
-        days.add(format(d, 'yyyy-MM-dd'));
+      // Only past/present days as "used" Schengen days
+      const clampedEnd = tripEnd > today ? today : tripEnd;
+      if (tripStart <= clampedEnd) {
+        const interval = eachDayOfInterval({ start: tripStart, end: clampedEnd });
+        for (const d of interval) {
+          days.add(format(d, 'yyyy-MM-dd'));
+        }
       }
     }
     return days;
-  }, [trips]);
+  }, [trips, today]);
+
+  // Future planned days (after today, from trips that extend past today)
+  const futureDays = useMemo(() => {
+    const days = new Set<string>();
+    const tomorrow = addDays(today, 1);
+    for (const trip of trips) {
+      const tripEnd = parseISO(trip.endDate);
+      if (isAfter(tripEnd, today)) {
+        const futureStart = parseISO(trip.startDate) > today ? parseISO(trip.startDate) : tomorrow;
+        const interval = eachDayOfInterval({ start: futureStart, end: tripEnd });
+        for (const d of interval) {
+          days.add(format(d, 'yyyy-MM-dd'));
+        }
+      }
+    }
+    return days;
+  }, [trips, today]);
+
+  // Find the latest future trip end to extend months display
+  const latestFutureEnd = useMemo(() => {
+    let latest = today;
+    for (const trip of trips) {
+      const tripEnd = parseISO(trip.endDate);
+      if (isAfter(tripEnd, latest)) latest = tripEnd;
+    }
+    return latest;
+  }, [trips, today]);
 
   const daysInSchengen = useMemo(() => {
     let count = 0;
@@ -160,14 +201,14 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
   const months = useMemo(() => {
     const result: { year: number; month: number }[] = [];
     const first = startOfMonth(windowStart);
-    const last = startOfMonth(today);
+    const last = startOfMonth(latestFutureEnd);
     let current = first;
     while (current <= last) {
       result.push({ year: current.getFullYear(), month: current.getMonth() });
       current = addMonths(current, 1);
     }
     return result;
-  }, [windowStart, today]);
+  }, [windowStart, latestFutureEnd]);
 
   return (
     <View style={styles.container}>
@@ -183,6 +224,7 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
             year={m.year}
             month={m.month}
             schengenDays={schengenDays}
+            futureDays={futureDays}
             windowStart={windowStart}
             windowEnd={today}
             today={today}
@@ -194,6 +236,10 @@ export function Timeline({ trips, referenceDate }: TimelineProps) {
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.schengenDay }]} />
           <Text style={styles.legendText}>In Schengen</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.primaryLight }]} />
+          <Text style={styles.legendText}>Planned</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.surfaceSecondary }]} />
