@@ -1,8 +1,9 @@
 export const COLORS = {
-  primary: '#3B82F6',
-  primaryDark: '#2563EB',
-  primaryLight: '#DBEAFE',
+  primary: '#4F6BF0',
+  primaryDark: '#3B52CC',
+  primaryLight: '#E0E7FF',
   accent: '#8B5CF6',
+  accentLight: '#EDE9FE',
 
   success: '#10B981',
   successLight: '#D1FAE5',
@@ -11,7 +12,7 @@ export const COLORS = {
   danger: '#EF4444',
   dangerLight: '#FEE2E2',
 
-  background: '#F0F4FF',
+  background: '#F5F7FF',
   surface: '#FFFFFF',
   surfaceSecondary: '#F1F5F9',
 
@@ -23,7 +24,7 @@ export const COLORS = {
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
 
-  schengenDay: '#3B82F6',
+  schengenDay: '#4F6BF0',
   freeDay: '#E2E8F0',
   todayRing: '#8B5CF6',
 };

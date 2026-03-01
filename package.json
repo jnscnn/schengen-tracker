@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
@@ -19,6 +20,7 @@
     "expo": "~55.0.4",
     "expo-constants": "~55.0.7",
     "expo-haptics": "~55.0.8",
+    "expo-linear-gradient": "~55.0.8",
     "expo-linking": "~55.0.7",
     "expo-router": "~55.0.3",
     "expo-status-bar": "~55.0.4",

@@ -8,7 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { useAuth } from '../hooks/AuthContext';
 
@@ -19,6 +21,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
     setError('');
@@ -41,75 +44,96 @@ export function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+    <LinearGradient
+      colors={['#E0E7FF', '#F5F7FF', '#FFFFFF']}
+      style={styles.gradient}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          <Text style={styles.emoji}>🇪🇺</Text>
-          <Text style={styles.title}>Schengen Tracker</Text>
-          <Text style={styles.subtitle}>
-            Track your 90/180 day visa-free stays
-          </Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <Text style={styles.emoji}>✈️ 🇪🇺 🌍</Text>
+            <Text style={styles.title}>Schengen Tracker</Text>
+            <Text style={styles.subtitle}>
+              Never worry about overstaying again
+            </Text>
 
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Username"
-              placeholderTextColor={COLORS.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor={COLORS.textTertiary}
-              secureTextEntry
-            />
-
-            {error ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{error}</Text>
+            <View style={styles.form}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="Username"
+                  placeholderTextColor={COLORS.textTertiary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
               </View>
-            ) : null}
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={[styles.input, { paddingRight: 50 }]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor={COLORS.textTertiary}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? '...' : isRegister ? 'Create Account' : 'Log In'}
-              </Text>
-            </TouchableOpacity>
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
 
-            <TouchableOpacity
-              onPress={() => { setIsRegister(!isRegister); setError(''); }}
-              style={styles.switchButton}
-            >
-              <Text style={styles.switchText}>
-                {isRegister
-                  ? 'Already have an account? Log in'
-                  : "Don't have an account? Sign up"}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleSubmit}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {isRegister ? 'Create Account' : 'Log In'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => { setIsRegister(!isRegister); setError(''); }}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  {isRegister
+                    ? 'Already have an account? Log in'
+                    : "Don't have an account? Sign up"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -118,21 +142,24 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xxl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#4F6BF0',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 24,
+    elevation: 8,
     maxWidth: 400,
     width: '100%',
     alignSelf: 'center',
   },
   emoji: {
-    fontSize: 48,
-    marginBottom: SPACING.sm,
+    fontSize: 36,
+    marginBottom: SPACING.md,
+    letterSpacing: 8,
   },
   title: {
     fontSize: FONT_SIZE.xxl,
@@ -140,7 +167,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   subtitle: {
-    fontSize: FONT_SIZE.sm,
+    fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.xl,
@@ -149,14 +176,29 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: SPACING.md,
   },
+  inputWrapper: {
+    position: 'relative',
+  },
   input: {
     backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
+    paddingVertical: 14,
     fontSize: FONT_SIZE.lg,
     color: COLORS.text,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  eyeIcon: {
+    fontSize: 18,
   },
   errorBox: {
     backgroundColor: COLORS.dangerLight,
@@ -171,9 +213,14 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
     color: COLORS.textInverse,

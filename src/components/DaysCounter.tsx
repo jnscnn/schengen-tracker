@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { format, parseISO, differenceInDays, startOfDay, addDays } from 'date-fns';
+import Animated, { useSharedValue, useAnimatedProps, withTiming, Easing } from 'react-native-reanimated';
+import { format, startOfDay, addDays } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { SchengenStatus } from '../types';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface DaysCounterProps {
   status: SchengenStatus;
@@ -26,14 +29,27 @@ function ProgressRing({
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - Math.min(Math.max(progress, 0), 1));
+
+  const animatedProgress = useSharedValue(0);
+
+  useEffect(() => {
+    animatedProgress.value = withTiming(Math.min(Math.max(progress, 0), 1), {
+      duration: 900,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [progress]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - animatedProgress.value),
+  }));
 
   return (
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
       <Circle cx={size / 2} cy={size / 2} r={radius} stroke={bgColor} strokeWidth={strokeWidth} fill="none" />
-      <Circle
+      <AnimatedCircle
         cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth}
-        fill="none" strokeDasharray={`${circumference}`} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
+        fill="none" strokeDasharray={`${circumference}`} strokeLinecap="round"
+        animatedProps={animatedProps}
       />
     </Svg>
   );

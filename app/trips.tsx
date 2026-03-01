@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  SectionList,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { subDays, startOfDay, parseISO } from 'date-fns';
 import { useTripsContext } from '../src/hooks/TripsContext';
 import { TripCard } from '../src/components/TripCard';
@@ -167,7 +167,7 @@ export default function TripsScreen() {
       />
 
       <TouchableOpacity style={styles.fab} onPress={handleAdd} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
+        <Ionicons name="add" size={28} color={COLORS.textInverse} />
       </TouchableOpacity>
 
       <TripForm

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { Trip } from '../types';
@@ -12,53 +13,54 @@ interface TripCardProps {
 }
 
 export function TripCard({ trip, onEdit, onDelete, isActive }: TripCardProps) {
+  const [showActions, setShowActions] = useState(false);
   const startDate = parseISO(trip.startDate);
   const endDate = parseISO(trip.endDate);
   const duration = differenceInDays(endDate, startDate) + 1;
 
   return (
-    <View style={[styles.container, isActive && styles.activeContainer]}>
+    <TouchableOpacity
+      style={[styles.container, isActive && styles.activeContainer]}
+      onPress={() => setShowActions(!showActions)}
+      activeOpacity={0.7}
+    >
       <View style={styles.header}>
-        <View style={styles.dateRange}>
-          <Text style={styles.dateText}>
-            {format(startDate, 'MMM d, yyyy')}
-          </Text>
-          <Text style={styles.arrow}> → </Text>
-          <Text style={styles.dateText}>
-            {format(endDate, 'MMM d, yyyy')}
-          </Text>
-        </View>
-        {isActive && (
-          <View style={styles.activeBadge}>
-            <Text style={styles.activeBadgeText}>NOW</Text>
+        <View style={{ flex: 1 }}>
+          <View style={styles.dateRange}>
+            <Text style={styles.dateText}>
+              {format(startDate, 'MMM d')} → {format(endDate, 'MMM d, yyyy')}
+            </Text>
+            {isActive && (
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>NOW</Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
-
-      <View style={styles.details}>
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>{duration} day{duration !== 1 ? 's' : ''}</Text>
+          <View style={styles.details}>
+            <View style={styles.durationBadge}>
+              <Text style={styles.durationText}>{duration} day{duration !== 1 ? 's' : ''}</Text>
+            </View>
+            {trip.note ? (
+              <Text style={styles.note} numberOfLines={1}>{trip.note}</Text>
+            ) : null}
+          </View>
         </View>
-        {trip.note ? (
-          <Text style={styles.note} numberOfLines={1}>{trip.note}</Text>
-        ) : null}
+        <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textTertiary} />
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => onEdit(trip)}
-        >
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => onDelete(trip.id)}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      {showActions && (
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.editButton} onPress={() => { onEdit(trip); setShowActions(false); }}>
+            <Ionicons name="pencil" size={14} color={COLORS.primary} />
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => { onDelete(trip.id); setShowActions(false); }}>
+            <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -82,20 +84,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   dateRange: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.sm,
   },
   dateText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: COLORS.text,
-  },
-  arrow: {
-    fontSize: FONT_SIZE.md,
-    color: COLORS.textTertiary,
   },
   activeBadge: {
     backgroundColor: COLORS.primaryLight,
@@ -111,7 +110,7 @@ const styles = StyleSheet.create({
   details: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
     gap: SPACING.sm,
   },
   durationBadge: {
@@ -134,10 +133,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: SPACING.sm,
-    gap: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+    gap: SPACING.md,
   },
   editButton: {
-    paddingHorizontal: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.surfaceSecondary,
@@ -148,7 +153,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   deleteButton: {
-    paddingHorizontal: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.sm,
   },
