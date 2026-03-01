@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Trip } from '../types';
-import { loadTrips, saveTrips, addTrip as addTripStorage, updateTrip as updateTripStorage, deleteTrip as deleteTripStorage } from '../utils/storage';
+import { apiGetTrips, apiAddTrip, apiUpdateTrip, apiDeleteTrip } from '../utils/api';
 
 export function useTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -9,7 +9,9 @@ export function useTrips() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const loaded = await loadTrips();
+      const loaded = await apiGetTrips();
+      // Sort by start date descending
+      loaded.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
       setTrips(loaded);
     } catch (error) {
       console.error('Failed to load trips:', error);
@@ -23,29 +25,22 @@ export function useTrips() {
   }, [refresh]);
 
   const addTrip = useCallback(async (trip: Trip) => {
-    const updated = await addTripStorage(trip);
-    setTrips(updated);
-    return updated;
-  }, []);
+    await apiAddTrip(trip);
+    await refresh();
+    return trips;
+  }, [refresh, trips]);
 
   const updateTrip = useCallback(async (trip: Trip) => {
-    const updated = await updateTripStorage(trip);
-    setTrips(updated);
-    return updated;
-  }, []);
+    await apiUpdateTrip(trip);
+    await refresh();
+    return trips;
+  }, [refresh, trips]);
 
   const deleteTrip = useCallback(async (tripId: string) => {
-    const updated = await deleteTripStorage(tripId);
-    setTrips(updated);
-    return updated;
-  }, []);
+    await apiDeleteTrip(tripId);
+    await refresh();
+    return trips;
+  }, [refresh, trips]);
 
-  return {
-    trips,
-    loading,
-    refresh,
-    addTrip,
-    updateTrip,
-    deleteTrip,
-  };
+  return { trips, loading, refresh, addTrip, updateTrip, deleteTrip };
 }

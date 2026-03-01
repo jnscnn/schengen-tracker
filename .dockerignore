@@ -1,0 +1,7 @@
+node_modules
+dist
+server/data
+.expo
+__tests__
+*.log
+expo-qr.png
