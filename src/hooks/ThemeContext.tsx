@@ -18,7 +18,6 @@ const THEME_KEY = '@schengen_theme';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme() as ColorScheme | null;
   const [scheme, setScheme] = useState<ColorScheme>(systemScheme || 'light');
-  const [loaded, setLoaded] = useState(false);
 
   // Load saved preference
   useEffect(() => {
@@ -27,11 +26,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const saved = await AsyncStorage.getItem(THEME_KEY);
         if (saved === 'dark' || saved === 'light') {
           setScheme(saved);
-        } else if (systemScheme) {
-          setScheme(systemScheme);
         }
       } catch {}
-      setLoaded(true);
     })();
   }, []);
 
@@ -45,8 +41,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setScheme(next);
     AsyncStorage.setItem(THEME_KEY, next);
   }, [scheme]);
-
-  if (!loaded) return null;
 
   return (
     <ThemeContext.Provider value={{ colors, scheme, toggle }}>
