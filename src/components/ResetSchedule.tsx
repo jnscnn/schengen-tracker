@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { format, parseISO } from 'date-fns';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { ResetEvent } from '../types';
 
@@ -9,8 +9,57 @@ interface ResetScheduleProps {
   daysRemaining: number;
 }
 
+interface ResetSpan {
+  startDate: string;
+  endDate: string;
+  totalDaysFreed: number;
+  cumulativeDaysAvailable: number;
+}
+
+/**
+ * Group consecutive (or near-consecutive) reset events into spans.
+ * e.g. "Apr 5 → Apr 15: +11 days freed"
+ */
+function groupIntoSpans(events: ResetEvent[]): ResetSpan[] {
+  if (events.length === 0) return [];
+
+  const spans: ResetSpan[] = [];
+  let currentSpan: ResetSpan = {
+    startDate: events[0].date,
+    endDate: events[0].date,
+    totalDaysFreed: events[0].daysFreed,
+    cumulativeDaysAvailable: events[0].cumulativeDaysAvailable,
+  };
+
+  for (let i = 1; i < events.length; i++) {
+    const prev = parseISO(events[i - 1].date);
+    const curr = parseISO(events[i].date);
+    const gap = differenceInDays(curr, prev);
+
+    // Group if days are consecutive (gap of 1) or same day
+    if (gap <= 1) {
+      currentSpan.endDate = events[i].date;
+      currentSpan.totalDaysFreed += events[i].daysFreed;
+      currentSpan.cumulativeDaysAvailable = events[i].cumulativeDaysAvailable;
+    } else {
+      spans.push(currentSpan);
+      currentSpan = {
+        startDate: events[i].date,
+        endDate: events[i].date,
+        totalDaysFreed: events[i].daysFreed,
+        cumulativeDaysAvailable: events[i].cumulativeDaysAvailable,
+      };
+    }
+  }
+  spans.push(currentSpan);
+
+  return spans;
+}
+
 export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
-  if (events.length === 0) {
+  const spans = useMemo(() => groupIntoSpans(events), [events]);
+
+  if (spans.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>📅 Days Reset Schedule</Text>
@@ -23,27 +72,6 @@ export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
     );
   }
 
-  // Consolidate events by grouping them into meaningful chunks
-  const consolidatedEvents: ResetEvent[] = [];
-  let currentEvent: ResetEvent | null = null;
-
-  for (const event of events) {
-    if (
-      currentEvent &&
-      currentEvent.date === event.date
-    ) {
-      currentEvent.daysFreed += event.daysFreed;
-      currentEvent.cumulativeDaysAvailable = event.cumulativeDaysAvailable;
-    } else {
-      if (currentEvent) consolidatedEvents.push(currentEvent);
-      currentEvent = { ...event };
-    }
-  }
-  if (currentEvent) consolidatedEvents.push(currentEvent);
-
-  // Show up to 10 events
-  const displayEvents = consolidatedEvents.slice(0, 10);
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>📅 Days Reset Schedule</Text>
@@ -51,50 +79,64 @@ export function ResetSchedule({ events, daysRemaining }: ResetScheduleProps) {
         When you'll get days back as old trips fall off the 180-day window
       </Text>
 
-      <View style={styles.eventsList}>
-        {displayEvents.map((event, index) => {
-          const date = parseISO(event.date);
+      <View style={styles.spansList}>
+        {spans.map((span, index) => {
+          const startDate = parseISO(span.startDate);
+          const endDate = parseISO(span.endDate);
+          const isSingleDay = span.startDate === span.endDate;
+          const availCapped = Math.min(span.cumulativeDaysAvailable, 90);
+
           return (
-            <View key={`${event.date}-${index}`} style={styles.eventRow}>
-              <View style={styles.eventDate}>
-                <Text style={styles.eventMonth}>
-                  {format(date, 'MMM')}
+            <View key={`${span.startDate}-${index}`} style={styles.spanRow}>
+              {/* Date range column */}
+              <View style={styles.spanDates}>
+                <Text style={styles.spanDateText}>
+                  {format(startDate, 'MMM d')}
                 </Text>
-                <Text style={styles.eventDay}>
-                  {format(date, 'd')}
+                {!isSingleDay && (
+                  <>
+                    <Text style={styles.spanDateSeparator}>→</Text>
+                    <Text style={styles.spanDateText}>
+                      {format(endDate, 'MMM d')}
+                    </Text>
+                  </>
+                )}
+              </View>
+
+              {/* Details column */}
+              <View style={styles.spanDetails}>
+                <Text style={styles.spanFreed}>
+                  +{span.totalDaysFreed} day{span.totalDaysFreed !== 1 ? 's' : ''} freed
+                </Text>
+                <Text style={styles.spanCumulative}>
+                  → {availCapped} day{availCapped !== 1 ? 's' : ''} available after
                 </Text>
               </View>
-              <View style={styles.eventDetails}>
-                <Text style={styles.eventDaysFreed}>
-                  +{event.daysFreed} day{event.daysFreed !== 1 ? 's' : ''} freed
-                </Text>
-                <Text style={styles.eventCumulative}>
-                  → {Math.min(event.cumulativeDaysAvailable, 90)} days available
-                </Text>
-              </View>
+
+              {/* Badge */}
               <View
                 style={[
-                  styles.eventBadge,
+                  styles.spanBadge,
                   {
                     backgroundColor:
-                      event.cumulativeDaysAvailable >= 60 ? COLORS.successLight :
-                      event.cumulativeDaysAvailable >= 30 ? COLORS.warningLight :
+                      availCapped >= 60 ? COLORS.successLight :
+                      availCapped >= 30 ? COLORS.warningLight :
                       COLORS.dangerLight,
                   },
                 ]}
               >
                 <Text
                   style={[
-                    styles.eventBadgeText,
+                    styles.spanBadgeText,
                     {
                       color:
-                        event.cumulativeDaysAvailable >= 60 ? COLORS.success :
-                        event.cumulativeDaysAvailable >= 30 ? COLORS.warning :
+                        availCapped >= 60 ? COLORS.success :
+                        availCapped >= 30 ? COLORS.warning :
                         COLORS.danger,
                     },
                   ]}
                 >
-                  {Math.min(event.cumulativeDaysAvailable, 90)}
+                  {availCapped}
                 </Text>
               </View>
             </View>
@@ -138,53 +180,55 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  eventsList: {
-    gap: SPACING.sm,
+  spansList: {
+    gap: SPACING.xs,
   },
-  eventRow: {
+  spanRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
-  eventDate: {
-    width: 48,
+  spanDates: {
+    width: 110,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
   },
-  eventMonth: {
-    fontSize: FONT_SIZE.xs,
-    fontWeight: '600',
-    color: COLORS.primary,
-    textTransform: 'uppercase',
-  },
-  eventDay: {
-    fontSize: FONT_SIZE.xl,
+  spanDateText: {
+    fontSize: FONT_SIZE.sm,
     fontWeight: '700',
     color: COLORS.text,
   },
-  eventDetails: {
-    flex: 1,
-    marginLeft: SPACING.md,
+  spanDateSeparator: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textTertiary,
   },
-  eventDaysFreed: {
+  spanDetails: {
+    flex: 1,
+    marginLeft: SPACING.sm,
+  },
+  spanFreed: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: COLORS.success,
   },
-  eventCumulative: {
+  spanCumulative: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  eventBadge: {
+  spanBadge: {
     width: 40,
     height: 40,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: SPACING.sm,
   },
-  eventBadgeText: {
+  spanBadgeText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
