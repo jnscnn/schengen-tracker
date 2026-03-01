@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { format, parseISO, differenceInDays, eachDayOfInterval } from 'date-fns';
+import { format, parseISO, differenceInDays, eachDayOfInterval, isBefore, isAfter, startOfDay } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { Trip } from '../types';
 import { generateId } from '../utils/schengen';
@@ -19,13 +19,14 @@ import { generateId } from '../utils/schengen';
 interface TripFormProps {
   visible: boolean;
   trip?: Trip | null;
+  existingTrips?: Trip[];
   onSave: (trip: Trip) => void;
   onCancel: () => void;
 }
 
 type SelectionPhase = 'start' | 'end';
 
-export function TripForm({ visible, trip, onSave, onCancel }: TripFormProps) {
+export function TripForm({ visible, trip, existingTrips, onSave, onCancel }: TripFormProps) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [note, setNote] = useState('');
@@ -96,6 +97,23 @@ export function TripForm({ visible, trip, onSave, onCancel }: TripFormProps) {
 
     return marks;
   }, [startDate, endDate]);
+
+  // Check for overlap with existing trips
+  const overlapWarning = useMemo(() => {
+    if (!startDate || !endDate || !existingTrips) return null;
+    const newStart = startOfDay(parseISO(startDate));
+    const newEnd = startOfDay(parseISO(endDate));
+    for (const existing of existingTrips) {
+      if (trip && existing.id === trip.id) continue; // skip self when editing
+      const exStart = startOfDay(parseISO(existing.startDate));
+      const exEnd = startOfDay(parseISO(existing.endDate));
+      // Overlap: newStart <= exEnd && newEnd >= exStart
+      if (!isAfter(newStart, exEnd) && !isBefore(newEnd, exStart)) {
+        return `Overlaps with ${existing.note || `trip ${format(exStart, 'MMM d')} – ${format(exEnd, 'MMM d')}`}`;
+      }
+    }
+    return null;
+  }, [startDate, endDate, existingTrips, trip]);
 
   const duration = useMemo(() => {
     if (startDate && endDate) {
@@ -222,6 +240,12 @@ export function TripForm({ visible, trip, onSave, onCancel }: TripFormProps) {
             {error ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {overlapWarning && !error ? (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>⚠️ {overlapWarning}</Text>
               </View>
             ) : null}
 
@@ -353,6 +377,16 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: COLORS.danger,
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+  },
+  warningContainer: {
+    backgroundColor: COLORS.warningLight,
+    padding: SPACING.md,
+    borderRadius: RADIUS.sm,
+  },
+  warningText: {
+    color: COLORS.warning,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },

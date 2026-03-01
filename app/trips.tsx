@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,39 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  SectionList,
 } from 'react-native';
+import { subDays, startOfDay, parseISO } from 'date-fns';
 import { useTripsContext } from '../src/hooks/TripsContext';
 import { TripCard } from '../src/components/TripCard';
 import { TripForm } from '../src/components/TripForm';
 import { Trip } from '../src/types';
 import { getSchengenStatus } from '../src/utils/schengen';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../src/constants/theme';
+import { COLORS, SPACING, FONT_SIZE, RADIUS, SCHENGEN } from '../src/constants/theme';
 
 export default function TripsScreen() {
   const { trips, addTrip, updateTrip, deleteTrip, loading } = useTripsContext();
   const [formVisible, setFormVisible] = useState(false);
+  const [showPast, setShowPast] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
 
   const status = getSchengenStatus(trips);
+
+  // Split trips into recent (within 180-day window) and past
+  const { recentTrips, pastTrips } = useMemo(() => {
+    const cutoff = subDays(startOfDay(new Date()), SCHENGEN.WINDOW_DAYS - 1);
+    const recent: Trip[] = [];
+    const past: Trip[] = [];
+    for (const trip of trips) {
+      const tripEnd = parseISO(trip.endDate);
+      if (tripEnd >= cutoff) {
+        recent.push(trip);
+      } else {
+        past.push(trip);
+      }
+    }
+    return { recentTrips: recent, pastTrips: past };
+  }, [trips]);
 
   const handleAdd = useCallback(() => {
     setEditingTrip(null);
@@ -83,7 +102,7 @@ export default function TripsScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={trips}
+        data={recentTrips}
         renderItem={renderTrip}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -120,6 +139,31 @@ export default function TripsScreen() {
             </Text>
           </View>
         }
+        ListFooterComponent={
+          pastTrips.length > 0 ? (
+            <View style={styles.pastSection}>
+              <TouchableOpacity
+                style={styles.pastHeader}
+                onPress={() => setShowPast(!showPast)}
+              >
+                <Text style={styles.pastHeaderText}>
+                  Past Trips ({pastTrips.length})
+                </Text>
+                <Text style={styles.pastToggle}>
+                  {showPast ? '▲ Hide' : '▼ Show'}
+                </Text>
+              </TouchableOpacity>
+              {showPast && pastTrips.map((trip) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </View>
+          ) : null
+        }
       />
 
       <TouchableOpacity style={styles.fab} onPress={handleAdd} activeOpacity={0.8}>
@@ -129,6 +173,7 @@ export default function TripsScreen() {
       <TripForm
         visible={formVisible}
         trip={editingTrip}
+        existingTrips={trips}
         onSave={handleSave}
         onCancel={handleCancel}
       />
@@ -219,5 +264,29 @@ const styles = StyleSheet.create({
     color: COLORS.textInverse,
     fontWeight: '400',
     lineHeight: 30,
+  },
+  pastSection: {
+    marginTop: SPACING.lg,
+    marginHorizontal: SPACING.md,
+  },
+  pastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.surfaceSecondary,
+    borderRadius: RADIUS.sm,
+    marginBottom: SPACING.sm,
+  },
+  pastHeaderText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  pastToggle: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });

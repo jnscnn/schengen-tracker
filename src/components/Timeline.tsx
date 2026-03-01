@@ -289,6 +289,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-evenly',
+    maxWidth: MONTH_WIDTH * 4 + SPACING.md * 3,
+    alignSelf: 'center',
   },
   legend: {
     flexDirection: 'row',

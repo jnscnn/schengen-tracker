@@ -9,7 +9,7 @@ import {
 import { Calendar, DateData } from 'react-native-calendars';
 import { format, parseISO, addDays, differenceInDays, eachDayOfInterval } from 'date-fns';
 import { useTripsContext } from '../src/hooks/TripsContext';
-import { planTrip, findNextEntryDate, getSchengenStatus, countDaysInWindow } from '../src/utils/schengen';
+import { planTrip, findNextEntryDate, getSchengenStatus, countDaysInWindow, getResetSchedule } from '../src/utils/schengen';
 import { COLORS, SPACING, FONT_SIZE, RADIUS, SCHENGEN } from '../src/constants/theme';
 import { subDays, startOfDay } from 'date-fns';
 
@@ -37,6 +37,34 @@ export default function PlannerScreen() {
     if (!arrivalDate) return null;
     return planTrip(trips, arrivalDate);
   }, [trips, arrivalDate]);
+
+  // Upcoming resets from the perspective of a selected/custom date
+  const upcomingResets = useMemo(() => {
+    const refDate = mode === 'max' && selectedDate
+      ? parseISO(selectedDate)
+      : mode === 'custom' && customStart
+      ? parseISO(customStart)
+      : new Date();
+    const events = getResetSchedule(trips, refDate, 120);
+    // Group consecutive days into spans
+    if (events.length === 0) return [];
+    const spans: { start: string; end: string; freed: number; available: number }[] = [];
+    let cur = { start: events[0].date, end: events[0].date, freed: events[0].daysFreed, available: events[0].cumulativeDaysAvailable };
+    for (let i = 1; i < events.length; i++) {
+      const prevDate = parseISO(events[i-1].date);
+      const currDate = parseISO(events[i].date);
+      if (differenceInDays(currDate, prevDate) <= 1) {
+        cur.end = events[i].date;
+        cur.freed += events[i].daysFreed;
+        cur.available = events[i].cumulativeDaysAvailable;
+      } else {
+        spans.push(cur);
+        cur = { start: events[i].date, end: events[i].date, freed: events[i].daysFreed, available: events[i].cumulativeDaysAvailable };
+      }
+    }
+    spans.push(cur);
+    return spans.slice(0, 5);
+  }, [trips, mode, selectedDate, customStart]);
 
   const status = useMemo(() => getSchengenStatus(trips), [trips]);
 
@@ -346,6 +374,37 @@ export default function PlannerScreen() {
         )}
       </View>
 
+      {/* Upcoming resets */}
+      {upcomingResets.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🔄 Upcoming Resets</Text>
+          <Text style={styles.sectionSubtitle}>When more days become available</Text>
+          <View style={styles.resetsCard}>
+            {upcomingResets.map((span, i) => {
+              const isSingle = span.start === span.end;
+              const avail = Math.min(span.available, 90);
+              return (
+                <View key={i} style={styles.resetRow}>
+                  <View style={styles.resetDates}>
+                    <Text style={styles.resetDateText}>{format(parseISO(span.start), 'MMM d')}</Text>
+                    {!isSingle && (
+                      <>
+                        <Text style={styles.resetArrow}> → </Text>
+                        <Text style={styles.resetDateText}>{format(parseISO(span.end), 'MMM d')}</Text>
+                      </>
+                    )}
+                  </View>
+                  <Text style={styles.resetFreed}>+{span.freed}d</Text>
+                  <Text style={[styles.resetAvail, { color: avail >= 60 ? COLORS.success : avail >= 30 ? COLORS.warning : COLORS.danger }]}>
+                    → {avail} avail
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>ℹ️ About the 90/180 Rule</Text>
         <View style={styles.infoBox}>
@@ -488,4 +547,19 @@ const styles = StyleSheet.create({
   infoBox: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.lg, gap: SPACING.md },
   infoText: { fontSize: FONT_SIZE.md, color: COLORS.textSecondary, lineHeight: 22 },
   bold: { fontWeight: '700', color: COLORS.text },
+
+  // Resets section
+  resetsCard: {
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.md,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+  },
+  resetRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.xs,
+    borderBottomWidth: 1, borderBottomColor: COLORS.borderLight, gap: SPACING.sm,
+  },
+  resetDates: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  resetDateText: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
+  resetArrow: { fontSize: FONT_SIZE.xs, color: COLORS.textTertiary },
+  resetFreed: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.success, width: 40, textAlign: 'right' },
+  resetAvail: { fontSize: FONT_SIZE.sm, fontWeight: '600', width: 70, textAlign: 'right' },
 });

@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { format, parseISO, differenceInDays, startOfDay, addDays } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants/theme';
 import { SchengenStatus } from '../types';
 
 interface DaysCounterProps {
   status: SchengenStatus;
 }
+
+const SAFETY_BUFFER = 3;
 
 function ProgressRing({
   size,
@@ -17,7 +20,7 @@ function ProgressRing({
 }: {
   size: number;
   strokeWidth: number;
-  progress: number; // 0-1
+  progress: number;
   color: string;
   bgColor: string;
 }) {
@@ -27,24 +30,10 @@ function ProgressRing({
 
   return (
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <Circle cx={size / 2} cy={size / 2} r={radius} stroke={bgColor} strokeWidth={strokeWidth} fill="none" />
       <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        stroke={bgColor}
-        strokeWidth={strokeWidth}
-        fill="none"
-      />
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        stroke={color}
-        strokeWidth={strokeWidth}
-        fill="none"
-        strokeDasharray={`${circumference}`}
-        strokeDashoffset={strokeDashoffset}
-        strokeLinecap="round"
+        cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth}
+        fill="none" strokeDasharray={`${circumference}`} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
       />
     </Svg>
   );
@@ -52,8 +41,9 @@ function ProgressRing({
 
 export function DaysCounter({ status }: DaysCounterProps) {
   const { daysRemaining, daysUsed, maxDays, isOverstay, currentTrip } = status;
+  const today = startOfDay(new Date());
 
-  const remainingFraction = daysRemaining / maxDays; // how much is LEFT (for the ring)
+  const remainingFraction = daysRemaining / maxDays;
   const statusColor =
     isOverstay ? COLORS.danger :
     daysRemaining <= 7 ? COLORS.danger :
@@ -65,6 +55,14 @@ export function DaysCounter({ status }: DaysCounterProps) {
     currentTrip ? '📍 In Schengen' :
     '🏠 Outside Schengen';
 
+  // Calculate must-leave date for current trip
+  const mustLeaveDate = currentTrip && !isOverstay && daysRemaining > 0
+    ? addDays(today, daysRemaining - 1)
+    : null;
+  const safeLeaveDate = mustLeaveDate && daysRemaining > SAFETY_BUFFER
+    ? addDays(today, daysRemaining - 1 - SAFETY_BUFFER)
+    : null;
+
   const ringSize = 160;
   const ringStroke = 12;
 
@@ -72,24 +70,17 @@ export function DaysCounter({ status }: DaysCounterProps) {
     <View style={styles.container}>
       <Text style={styles.statusLabel}>{statusLabel}</Text>
 
-      {/* Ring + counter */}
       <View style={styles.ringContainer}>
         <ProgressRing
-          size={ringSize}
-          strokeWidth={ringStroke}
-          progress={remainingFraction}
-          color={statusColor}
-          bgColor={COLORS.surfaceSecondary}
+          size={ringSize} strokeWidth={ringStroke}
+          progress={remainingFraction} color={statusColor} bgColor={COLORS.surfaceSecondary}
         />
         <View style={styles.ringContent}>
-          <Text style={[styles.counter, { color: statusColor }]}>
-            {daysRemaining}
-          </Text>
+          <Text style={[styles.counter, { color: statusColor }]}>{daysRemaining}</Text>
           <Text style={styles.counterLabel}>of {maxDays} days left</Text>
         </View>
       </View>
 
-      {/* Used / remaining breakdown */}
       <View style={styles.breakdownRow}>
         <View style={styles.breakdownItem}>
           <View style={[styles.breakdownDot, { backgroundColor: statusColor }]} />
@@ -104,18 +95,45 @@ export function DaysCounter({ status }: DaysCounterProps) {
         </View>
       </View>
 
+      {/* Current trip: must-leave and safe-leave dates */}
+      {currentTrip && !isOverstay && mustLeaveDate && (
+        <View style={styles.leaveInfo}>
+          <View style={styles.leaveRow}>
+            <Text style={styles.leaveIcon}>🚨</Text>
+            <View style={styles.leaveDetail}>
+              <Text style={styles.leaveLabel}>Must leave by</Text>
+              <Text style={[styles.leaveDate, { color: COLORS.danger }]}>
+                {format(mustLeaveDate, 'MMM d, yyyy')}
+              </Text>
+            </View>
+          </View>
+          {safeLeaveDate && (
+            <View style={styles.leaveRow}>
+              <Text style={styles.leaveIcon}>✅</Text>
+              <View style={styles.leaveDetail}>
+                <Text style={styles.leaveLabel}>Safe to leave by ({SAFETY_BUFFER}-day buffer)</Text>
+                <Text style={[styles.leaveDate, { color: COLORS.success }]}>
+                  {format(safeLeaveDate, 'MMM d, yyyy')}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
       {isOverstay && (
         <View style={[styles.alertBanner, { backgroundColor: COLORS.dangerLight }]}>
           <Text style={[styles.alertText, { color: COLORS.danger }]}>
-            ⚠️ Over the 90-day limit by {daysUsed - maxDays} day(s)!
+            ⚠️ Over the 90-day limit by {daysUsed - maxDays} day(s)!{'\n'}
+            If still in Schengen, exit immediately.
           </Text>
         </View>
       )}
 
-      {!isOverstay && daysRemaining <= 14 && daysRemaining > 0 && (
+      {!isOverstay && daysRemaining <= 14 && daysRemaining > 0 && !currentTrip && (
         <View style={[styles.alertBanner, { backgroundColor: COLORS.warningLight }]}>
           <Text style={[styles.alertText, { color: COLORS.warning }]}>
-            ⏰ Only {daysRemaining} days left in the current window
+            ⏰ Only {daysRemaining} days left — plan trips carefully
           </Text>
         </View>
       )}
@@ -195,6 +213,32 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: COLORS.border,
   },
+  leaveInfo: {
+    marginTop: SPACING.md,
+    backgroundColor: COLORS.surfaceSecondary,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  leaveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  leaveIcon: {
+    fontSize: 18,
+  },
+  leaveDetail: {
+    flex: 1,
+  },
+  leaveLabel: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textSecondary,
+  },
+  leaveDate: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '700',
+  },
   alertBanner: {
     marginTop: SPACING.md,
     padding: SPACING.sm,
@@ -204,5 +248,7 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
