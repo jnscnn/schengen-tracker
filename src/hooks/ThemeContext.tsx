@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getColors, ColorScheme, ThemeColors, COLORS as DEFAULT_COLORS } from '../constants/theme';
-
-// Mutate the module-level COLORS export so existing components pick it up
-import * as theme from '../constants/theme';
+import { getColors, ColorScheme, ThemeColors } from '../constants/theme';
 
 interface ThemeContextType {
   colors: ThemeColors;
@@ -19,7 +16,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme() as ColorScheme | null;
   const [scheme, setScheme] = useState<ColorScheme>(systemScheme || 'light');
 
-  // Load saved preference
   useEffect(() => {
     (async () => {
       try {
@@ -32,9 +28,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const colors = getColors(scheme);
-
-  // Keep module-level COLORS in sync
-  (theme as any).COLORS = colors;
 
   const toggle = useCallback(() => {
     const next = scheme === 'light' ? 'dark' : 'light';

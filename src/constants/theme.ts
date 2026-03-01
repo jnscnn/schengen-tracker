@@ -67,8 +67,8 @@ export function getColors(scheme: ColorScheme): ThemeColors {
   return scheme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 }
 
-// Default export for backward compat — overridden at runtime by ThemeContext
-export let COLORS = LIGHT_COLORS;
+// Static default for any non-themed context (tests, etc.)
+export const COLORS = LIGHT_COLORS;
 
 export const SPACING = {
   xs: 4,
