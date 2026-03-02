@@ -172,18 +172,24 @@ app.get('/manifest.json', (_req, res) => {
   });
 });
 
+// Pre-process HTML with PWA meta tags
+const rawHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+const pwaHtml = rawHtml.replace(
+  '</head>',
+  `    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4F6BF0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Schengen" />
+  </head>`
+);
+// Write back so express.static serves the enhanced version
+fs.writeFileSync(path.join(distPath, 'index.html'), pwaHtml);
+
 app.use(express.static(distPath));
 app.get('/{*path}', (_req, res) => {
-  // Inject apple-touch-icon and manifest link into the HTML
-  const htmlPath = path.join(distPath, 'index.html');
-  let html = fs.readFileSync(htmlPath, 'utf-8');
-  if (!html.includes('apple-touch-icon')) {
-    html = html.replace(
-      '</head>',
-      `    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />\n    <link rel="manifest" href="/manifest.json" />\n    <meta name="theme-color" content="#4F6BF0" />\n    <meta name="apple-mobile-web-app-capable" content="yes" />\n    <meta name="apple-mobile-web-app-status-bar-style" content="default" />\n    <meta name="apple-mobile-web-app-title" content="Schengen" />\n  </head>`
-    );
-  }
-  res.send(html);
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 app.listen(PORT, () => {
