@@ -8,6 +8,7 @@ import { TripsProvider } from '../src/hooks/TripsContext';
 import { AuthProvider, useAuth } from '../src/hooks/AuthContext';
 import { ThemeProvider, useTheme } from '../src/hooks/ThemeContext';
 import { LoginScreen } from '../src/components/LoginScreen';
+import { SettingsMenu } from '../src/components/SettingsMenu';
 import { FONT_SIZE } from '../src/constants/theme';
 
 function AppContent() {
@@ -53,6 +54,7 @@ function AppContent() {
             title: 'Dashboard',
             tabBarLabel: 'Home',
             tabBarIcon: ({ color }) => <Ionicons name="home" size={22} color={color} />,
+            headerRight: () => <SettingsMenu />,
           }}
         />
         <Tabs.Screen

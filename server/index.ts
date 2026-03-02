@@ -148,9 +148,42 @@ app.delete('/api/trips/:id', authenticate, (req, res) => {
 
 // Serve static web build
 const distPath = path.join(__dirname, '..', 'dist');
+const assetsPath = path.join(__dirname, '..', 'assets');
+
+// Serve icon files for PWA / Add to Home Screen
+app.get('/apple-touch-icon.png', (_req, res) => res.sendFile(path.join(assetsPath, 'icon.png')));
+app.get('/apple-touch-icon-precomposed.png', (_req, res) => res.sendFile(path.join(assetsPath, 'icon.png')));
+app.get('/icon-192.png', (_req, res) => res.sendFile(path.join(assetsPath, 'icon-192.png')));
+app.get('/icon-512.png', (_req, res) => res.sendFile(path.join(assetsPath, 'icon-512.png')));
+
+// PWA manifest
+app.get('/manifest.json', (_req, res) => {
+  res.json({
+    name: 'Schengen Tracker',
+    short_name: 'Schengen',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#4F6BF0',
+    theme_color: '#4F6BF0',
+    icons: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  });
+});
+
 app.use(express.static(distPath));
 app.get('/{*path}', (_req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  // Inject apple-touch-icon and manifest link into the HTML
+  const htmlPath = path.join(distPath, 'index.html');
+  let html = fs.readFileSync(htmlPath, 'utf-8');
+  if (!html.includes('apple-touch-icon')) {
+    html = html.replace(
+      '</head>',
+      `    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />\n    <link rel="manifest" href="/manifest.json" />\n    <meta name="theme-color" content="#4F6BF0" />\n    <meta name="apple-mobile-web-app-capable" content="yes" />\n    <meta name="apple-mobile-web-app-status-bar-style" content="default" />\n    <meta name="apple-mobile-web-app-title" content="Schengen" />\n  </head>`
+    );
+  }
+  res.send(html);
 });
 
 app.listen(PORT, () => {

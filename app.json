@@ -8,9 +8,9 @@
     "userInterfaceStyle": "light",
     "scheme": "schengen-tracker",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F0F4FF"
+      "backgroundColor": "#4F6BF0"
     },
     "ios": {
       "supportsTablet": true,

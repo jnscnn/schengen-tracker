@@ -6,7 +6,6 @@ import { DaysCounter } from '../src/components/DaysCounter';
 import { Timeline } from '../src/components/Timeline';
 import { ResetSchedule } from '../src/components/ResetSchedule';
 import { useTripsContext } from '../src/hooks/TripsContext';
-import { useAuth } from '../src/hooks/AuthContext';
 import { getSchengenStatus, getResetSchedule, findNextEntryDate } from '../src/utils/schengen';
 import { SPACING, FONT_SIZE, RADIUS , ThemeColors } from '../src/constants/theme';
 import { useTheme } from '../src/hooks/ThemeContext';
@@ -14,9 +13,8 @@ import { format, parseISO, differenceInDays, startOfDay, isBefore } from 'date-f
 
 export default function DashboardScreen() {
   const { trips, loading, refresh } = useTripsContext();
-  const { logout } = useAuth();
   const router = useRouter();
-  const { colors, scheme, toggle } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const status = useMemo(() => getSchengenStatus(trips), [trips]);
@@ -53,16 +51,6 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={loading} onRefresh={refresh} />
       }
     >
-      {/* Header buttons: theme toggle + logout */}
-      <View style={styles.headerButtons}>
-        <TouchableOpacity style={styles.headerButton} onPress={toggle}>
-          <Ionicons name={scheme === 'dark' ? 'sunny' : 'moon'} size={18} color={colors.textTertiary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.headerButton} onPress={logout}>
-          <Ionicons name="log-out-outline" size={18} color={colors.textTertiary} />
-        </TouchableOpacity>
-      </View>
-
       <DaysCounter status={status} />
 
       {/* Next trip countdown */}
@@ -162,17 +150,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   content: {
     paddingBottom: SPACING.xxl,
-  },
-  headerButtons: {
-    position: 'absolute',
-    right: SPACING.md,
-    top: SPACING.sm,
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    zIndex: 10,
-  },
-  headerButton: {
-    padding: SPACING.sm,
   },
   nextTripBanner: {
     flexDirection: 'row',
