@@ -11,6 +11,7 @@ COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 RUN npx -y tsx --version > /dev/null
 COPY server/ server/
+COPY assets/ assets/
 COPY --from=web-build /app/dist ./dist
 EXPOSE 3000
 ENV PORT=3000
